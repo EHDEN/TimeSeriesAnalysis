@@ -1,0 +1,31 @@
+Package: TimeSeriesAnalysis
+Type: Package
+Title: Time series analysis exploration for cohorts generated against the OMOP Common Data Model
+Version: 0.0.1
+Authors@R: c(
+	person("Anthony", "Sena", , "asena5@its.jnj.com", role = c("aut", "cre")),
+	person("Sara", "Khalid", role = c("aut"))
+	)
+Maintainer: Anthony G. Sena <asena5@its.jnj.com>
+Description: Time series analysis exploration for cohorts generated against the OMOP Common Data Model
+License: file LICENSE
+VignetteBuilder: knitr
+Depends:
+  DatabaseConnector (>= 4.0.0)
+Imports:
+  ParallelLogger (>= 2.0.1),
+  SqlRender (>= 1.7.0),
+  CohortGenerator,
+  readr,
+  changepoint,
+  segmented
+Suggests:
+  knitr,
+  rmarkdown
+Remotes:
+  anthonysena/CohortGenerator
+URL: https://github.com/EHDEN/TimeSeriesAnalysis
+BugReports: https://github.com/EHDEN/TimeSeriesAnalysis/issues
+Encoding: UTF-8
+LazyData: TRUE
+RoxygenNote: 7.1.1
