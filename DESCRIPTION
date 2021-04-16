@@ -18,7 +18,12 @@ Imports:
   CohortGenerator,
   readr,
   changepoint,
-  segmented
+  segmented,
+  shiny,
+  shinydashboard,
+  shinyWidgets,
+  DT,
+  htmltools
 Suggests:
   knitr,
   rmarkdown

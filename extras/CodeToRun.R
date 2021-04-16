@@ -3,8 +3,7 @@ library(TimeSeriesAnalysis)
 andromedaTempFolder <- if (Sys.getenv("ANDROMEDA_TEMP_FOLDER") == "") "~/andromedaTemp" else Sys.getenv("ANDROMEDA_TEMP_FOLDER")
 options(andromedaTempFolder = andromedaTempFolder)
 
-# Details for connecting to the server:
-#database <- "optum_ehr"
+# Details for connecting to the server: database <- 'optum_ehr'
 database <- "premier"
 dbms <- Sys.getenv("DBMS")
 user <- Sys.getenv("DB_USER")
@@ -21,10 +20,10 @@ connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = dbms,
                                                                 port = port)
 
 
-# Details for connecting to the CDM and storing the results
-#cdmDatabaseSchema <- "cdm_optum_ehr_covid_v1547"
+# Details for connecting to the CDM and storing the results cdmDatabaseSchema <-
+# 'cdm_optum_ehr_covid_v1547'
 cdmDatabaseSchema <- "cdm_premier_v1481"
-#cohortDatabaseSchema <- "instantiated_cohorts"
+# cohortDatabaseSchema <- 'instantiated_cohorts'
 cohortDatabaseSchema <- "scratch_asena5_lsc"
 cohortTable <- paste0("ags_ts_cohorts_", cdmDatabaseSchema)
 minCellCount <- 5
@@ -55,38 +54,18 @@ runStudy(connectionDetails = connectionDetails,
          changePointYear = 2020,
          minCellCount = minCellCount)
 
-# # Create the cohorts
-# output <- createCohorts(connectionDetails = connectionDetails,
-#                         cdmDatabaseSchema = cdmDatabaseSchema,
-#                         cohortDatabaseSchema = cohortDatabaseSchema,
-#                         cohortTable = cohortTable,
-#                         incremental = TRUE,
-#                         incrementalFolder = file.path(outputFolder, "RecordKeeping"))
-# 
-# # Extract the results
-# extractTimeSeriesData(connectionDetails = connectionDetails,
-#                       cdmDatabaseSchema = cdmDatabaseSchema,
-#                       tempEmulationSchema = tempEmulationSchema,
-#                       cohortDatabaseSchema = cohortDatabaseSchema,
-#                       cohortTable = cohortTable,
-#                       exportFolder = outputFolder,
-#                       databaseId = databaseId,
-#                       databaseName = databaseName,
-#                       databaseDescription = databaseDescription,
-#                       minCellCount = minCellCount)
-# 
-# # Premerge the results
-# preMergeResultsFiles(dataFolder = outputFolder)
-# 
-# Build the models
-# buildModels(exportFolder = outputFolder,
-#             changePointMonth = 3,
-#             changePointYear = 2020)
+# # Create the cohorts output <- createCohorts(connectionDetails = connectionDetails,
+# cdmDatabaseSchema = cdmDatabaseSchema, cohortDatabaseSchema = cohortDatabaseSchema, cohortTable =
+# cohortTable, incremental = TRUE, incrementalFolder = file.path(outputFolder, 'RecordKeeping')) #
+# Extract the results extractTimeSeriesData(connectionDetails = connectionDetails, cdmDatabaseSchema
+# = cdmDatabaseSchema, tempEmulationSchema = tempEmulationSchema, cohortDatabaseSchema =
+# cohortDatabaseSchema, cohortTable = cohortTable, exportFolder = outputFolder, databaseId =
+# databaseId, databaseName = databaseName, databaseDescription = databaseDescription, minCellCount =
+# minCellCount) # Premerge the results preMergeResultsFiles(dataFolder = outputFolder) Build the
+# models buildModels(exportFolder = outputFolder, changePointMonth = 3, changePointYear = 2020)
 
 
 consolidatedResultsFolder <- "D:/TimeSeriesAnalysis/Run/Results"
 preMergeResultsFiles(consolidatedResultsFolder)
 # Build the models
-buildModels(exportFolder = consolidatedResultsFolder,
-            changePointMonth = 3,
-            changePointYear = 2020)
+buildModels(exportFolder = consolidatedResultsFolder, changePointMonth = 3, changePointYear = 2020)

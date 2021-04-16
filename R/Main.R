@@ -1,4 +1,4 @@
-#'@export
+#' @export
 runStudy <- function(connectionDetails = NULL,
                      connection = NULL,
                      cdmDatabaseSchema,
@@ -17,16 +17,18 @@ runStudy <- function(connectionDetails = NULL,
   if (!is.numeric(changePointMonth) || !is.numeric(changePointYear)) {
     stop("changePointMonth and changePointYear must contain an integer value.")
   }
-  
+
   # Setup logging ---------
-  ParallelLogger::clearLoggers() # Ensure that any/all previous logging activities are cleared
-  ParallelLogger::addDefaultFileLogger(file.path(exportFolder, paste0(getThisPackageName(), ".txt")))
-  ParallelLogger::addDefaultErrorReportLogger(file.path(exportFolder, paste0(getThisPackageName(), "ErrorReportR.txt")))
+  ParallelLogger::clearLoggers()  # Ensure that any/all previous logging activities are cleared
+  ParallelLogger::addDefaultFileLogger(file.path(exportFolder,
+                                                 paste0(getThisPackageName(), ".txt")))
+  ParallelLogger::addDefaultErrorReportLogger(file.path(exportFolder, paste0(getThisPackageName(),
+                                                                             "ErrorReportR.txt")))
   ParallelLogger::addDefaultConsoleLogger()
   on.exit(ParallelLogger::unregisterLogger("DEFAULT_FILE_LOGGER", silent = TRUE))
   on.exit(ParallelLogger::unregisterLogger("DEFAULT_ERRORREPORT_LOGGER", silent = TRUE), add = TRUE)
   on.exit(ParallelLogger::unregisterLogger("DEFAULT_CONSOLE_LOGGER", silent = TRUE), add = TRUE)
-  
+
   # Write out the system information
   ParallelLogger::logInfo(.systemInfo())
 
@@ -37,7 +39,7 @@ runStudy <- function(connectionDetails = NULL,
                           cohortTable = cohortTable,
                           incremental = incremental,
                           incrementalFolder = file.path(exportFolder, "RecordKeeping"))
-  
+
   # Extract the results
   extractTimeSeriesData(connectionDetails = connectionDetails,
                         cdmDatabaseSchema = cdmDatabaseSchema,
@@ -49,14 +51,12 @@ runStudy <- function(connectionDetails = NULL,
                         databaseName = databaseName,
                         databaseDescription = databaseDescription,
                         minCellCount = minCellCount)
-  
+
   # Build the models
   buildModels(exportFolder = exportFolder,
               changePointMonth = changePointMonth,
               changePointYear = changePointYear)
-  
+
   delta <- Sys.time() - start
-  ParallelLogger::logInfo(paste("Running the study took",
-                                signif(delta, 3),
-                                attr(delta, "units")))    
+  ParallelLogger::logInfo(paste("Running the study took", signif(delta, 3), attr(delta, "units")))
 }

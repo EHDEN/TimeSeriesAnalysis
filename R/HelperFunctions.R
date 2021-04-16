@@ -16,7 +16,9 @@ getThisPackageName <- function() {
 getVocabularyInfo <- function(connection, cdmDatabaseSchema, tempEmulationSchema) {
   sql <- "SELECT vocabulary_version FROM @cdm_database_schema.vocabulary WHERE vocabulary_id = 'None';"
   sql <- SqlRender::render(sql, cdm_database_schema = cdmDatabaseSchema)
-  sql <- SqlRender::translate(sql, targetDialect = attr(connection, "dbms"), tempEmulationSchema = tempEmulationSchema)
+  sql <- SqlRender::translate(sql,
+                              targetDialect = attr(connection, "dbms"),
+                              tempEmulationSchema = tempEmulationSchema)
   vocabInfo <- DatabaseConnector::querySql(connection, sql)
   return(vocabInfo[[1]])
 }
@@ -24,7 +26,9 @@ getVocabularyInfo <- function(connection, cdmDatabaseSchema, tempEmulationSchema
 getPersonCount <- function(connection, cdmDatabaseSchema, tempEmulationSchema) {
   sql <- "SELECT COUNT_BIG(person_id) FROM @cdm_database_schema.person;"
   sql <- SqlRender::render(sql, cdm_database_schema = cdmDatabaseSchema)
-  sql <- SqlRender::translate(sql, targetDialect = attr(connection, "dbms"), tempEmulationSchema = tempEmulationSchema)
+  sql <- SqlRender::translate(sql,
+                              targetDialect = attr(connection, "dbms"),
+                              tempEmulationSchema = tempEmulationSchema)
   personCount <- DatabaseConnector::querySql(connection, sql)
   return(personCount[[1]])
 }
@@ -32,7 +36,9 @@ getPersonCount <- function(connection, cdmDatabaseSchema, tempEmulationSchema) {
 getObservationPeriodDateRange <- function(connection, cdmDatabaseSchema, tempEmulationSchema) {
   sql <- "SELECT MIN(observation_period_start_date) min_observation_period_date, MAX(observation_period_end_date) max_observation_period_date FROM @cdm_database_schema.observation_period;"
   sql <- SqlRender::render(sql, cdm_database_schema = cdmDatabaseSchema)
-  sql <- SqlRender::translate(sql, targetDialect = attr(connection, "dbms"), tempEmulationSchema = tempEmulationSchema)
+  sql <- SqlRender::translate(sql,
+                              targetDialect = attr(connection, "dbms"),
+                              tempEmulationSchema = tempEmulationSchema)
   op <- DatabaseConnector::querySql(connection, sql)
   names(op) <- SqlRender::snakeCaseToCamelCase(names(op))
   return(op)
@@ -64,8 +70,8 @@ writeToCsv <- function(data, fileName, incremental = FALSE, ...) {
   if (incremental) {
     params <- list(...)
     names(params) <- SqlRender::camelCaseToSnakeCase(names(params))
-    params$data = data
-    params$fileName = fileName
+    params$data <- data
+    params$fileName <- fileName
     do.call(CohortGenerator::saveIncremental, params)
   } else {
     readr::write_csv(data, fileName)

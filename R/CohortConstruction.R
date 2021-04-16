@@ -14,17 +14,21 @@ createCohorts <- function(connectionDetails = NULL,
   for (i in 1:nrow(cohortsToCreate)) {
     cohortFullName <- cohortsToCreate$name[i]
     cohortId <- cohortsToCreate$cohortId[i]
-    cohortJsonFile <- system.file(paste0("cohorts/", cohortId, ".json"), package = getThisPackageName(), mustWork = TRUE)
+    cohortJsonFile <- system.file(paste0("cohorts/", cohortId, ".json"),
+                                  package = getThisPackageName(),
+                                  mustWork = TRUE)
     cohortJson <- CohortGenerator::readCirceExpressionJsonFile(cohortJsonFile)
-    cohortSqlFile <- system.file(paste0("sql/sql_server/", cohortId, ".sql"), package = getThisPackageName(), mustWork = TRUE)
+    cohortSqlFile <- system.file(paste0("sql/sql_server/", cohortId, ".sql"),
+                                 package = getThisPackageName(),
+                                 mustWork = TRUE)
     cohortSql <- SqlRender::readSql(cohortSqlFile)
     cohortSet <- rbind(cohortSet, data.frame(cohortId = cohortId,
-                                             cohortFullName = cohortFullName, 
-                                             sql = cohortSql, 
+                                             cohortFullName = cohortFullName,
+                                             sql = cohortSql,
                                              json = cohortJson,
                                              stringsAsFactors = FALSE))
-  }  
-  
+  }
+
   # Create the cohorts
   results <- CohortGenerator::instantiateCohortSet(connectionDetails = connectionDetails,
                                                    connection = connection,
@@ -37,5 +41,5 @@ createCohorts <- function(connectionDetails = NULL,
                                                    incremental = incremental,
                                                    incrementalFolder = incrementalFolder)
   return(results)
-  
+
 }
