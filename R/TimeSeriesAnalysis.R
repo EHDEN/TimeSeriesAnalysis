@@ -6,4 +6,5 @@
 #' @importFrom stats aggregate
 #' @importFrom utils write.csv install.packages menu unzip packageVersion sessionInfo
 #' @importFrom rlang .data
+#' @import dplyr
 NULL
