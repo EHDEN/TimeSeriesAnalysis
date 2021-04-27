@@ -11,13 +11,13 @@ Description: Time series analysis exploration for cohorts generated against the 
 License: file LICENSE
 VignetteBuilder: knitr
 Depends:
-  DatabaseConnector (>= 4.0.0)
+  DatabaseConnector (>= 4.0.0),
+  dplyr
 Imports:
   ParallelLogger (>= 2.0.1),
   SqlRender (>= 1.7.0),
   CohortGenerator,
   readr,
-  dplyr,
   changepoint,
   segmented,
   shiny,

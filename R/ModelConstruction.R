@@ -122,6 +122,24 @@ createCpdSegmented <- function(model, data, family, initcp) {
                                   psi = initcp,
                                   control = segmented::seg.control(display = FALSE))  # psi= init cpt
 
+  tryCatch(expr = {
+    o.seg.auto <- segmented::segmented(model,
+                                       seg.Z = ~id,
+                                       psi = list(id=NA), 
+                                       control = segmented::seg.control(fix.npsi=FALSE, 
+                                                                        n.boot=100, 
+                                                                        tol=1e-7, 
+                                                                        it.max = 100, 
+                                                                        K=1, 
+                                                                        display=TRUE))
+  }, error = function(e) {
+    ParallelLogger::logError(e)
+  }, warning = function(e) {
+    ParallelLogger::logWarn(e)
+  }, finally = {
+    o.seg.auto <- NULL
+  })
+
   # n cpt = 2 o.seg.2 <-segmented::segmented(o,seg.Z=~z, npsi= 2, control=seg.control(display=FALSE)) n
   # cpt = automatic procedure to estimate breakpoints (starting from K quantiles) Hint: increases
   # number of iterations. Notice: bootstrap restart is not allowed! o.seg.auto
@@ -144,14 +162,13 @@ createCpdSegmented <- function(model, data, family, initcp) {
                                                                      n.boot = 100,
                                                                      it.max = 100))
   }, error = function(e) {
-    # (Optional) Do this if an error is caught...
-  }, warning = function(w) {
-    # (Optional) Do this if an warning is caught...
+    ParallelLogger::logError(e)
+  }, warning = function(e) {
+    ParallelLogger::logWarn(e)
   }, finally = {
-    # (Optional) Do this at the end before quitting the tryCatch structure...
     o.seg.2 <- NULL
   })
-
+  
 
   list4.1 <- cpdSave(o.seg.1, family)
   # list4.2 <- NULL #cpdSave(Samples, Time, o.seg.2, list4.2, family)
