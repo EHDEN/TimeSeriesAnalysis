@@ -30,8 +30,9 @@ readSettingsFile <- function(fileName) {
 
 #Load the settings
 cohorts <- readSettingsFile("CohortsToCreate.csv")
-eventTimeWindows <- readSettingsFile("eventTimeWindows.csv")
+eventTimeWindowsFromFile <- readSettingsFile("eventTimeWindows.csv")
 targetEventXref <- readSettingsFile("targetEventXref.csv")
+modelTypes <- c("Linear", "Poisson")
 
 # Format the results
 cohortCount <- merge(cohortCount, cohorts)
@@ -39,6 +40,22 @@ cohortCount <- merge(cohortCount, cohorts)
 targetEventXref <- merge(targetEventXref, cohorts[,c("cohortId", "name")], by.x = "targetCohortId", "cohortId")
 names(targetEventXref) <- c("targetCohortId", "eventCohortId", "targetCohortName")
 targetEventXref <- merge(targetEventXref, cohorts[,c("cohortId", "name")], by.x = "eventCohortId", "cohortId")
-names(targetEventXref) <- c("targetCohortId", "eventCohortId", "targetCohortName", "eventCohortName")
+names(targetEventXref) <- c("eventCohortId", "targetCohortId","targetCohortName", "eventCohortName")
 
-eventTimeWindows$timeDisplayName <- paste0(eventTimeWindows$windowStart, "d - ", eventTimeWindows$windowEnd, "d")
+eventTimeWindowsFromFile$timeDisplayName <- paste0(eventTimeWindowsFromFile$windowStart, "d - ", eventTimeWindowsFromFile$windowEnd, "d")
+eventTimeWindowsSubset <- unique(eventTimeWindowsFromFile[,c("windowId", "timeDisplayName")])
+eventTimeWindows <- eventTimeWindowsSubset$windowId
+names(eventTimeWindows) <- eventTimeWindowsSubset$timeDisplayName
+
+targetCohortsSubset <- unique(targetEventXref[,c("targetCohortId", "targetCohortName")])
+targetCohorts <- targetCohortsSubset$targetCohortId
+names(targetCohorts) <- targetCohortsSubset$targetCohortName
+
+eventCohortsSubset <- unique(targetEventXref[,c("eventCohortId", "eventCohortName")])
+eventCohorts <- eventCohortsSubset$eventCohortId
+names(eventCohorts) <- eventCohortsSubset$eventCohortName
+
+
+
+
+

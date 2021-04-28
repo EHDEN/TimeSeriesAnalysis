@@ -112,47 +112,57 @@ renderBorderTag <-  function() {
   ))
 }
 
-plotCpdSegmented <- function(data, model_cpt) {
-  df <- data[,c("id", "eventCount", "monthYear")]
-  my.fitted <- model_cpt$fitted.values
-  my.model <- data.frame(eventCount = my.fitted, id = df$id)
+ggplotCpd <- function(trendData, segmentedModel, xAxisLabel = "Time", yAxisLabel = "Event Count (n)") {
   # get n estimated cpts
-  ncpts_est <- nrow(model_cpt$psi)  # one estimated cpt in one row
+  ncpts_est <- segmentedModel$ncpts
   # get cpts
-  cpts_initial <- model_cpt$psi[1:ncpts_est, 1]  # first column is the initial cpts, one cpt per row
-  cpts_segmented <- model_cpt$psi[1:ncpts_est, 2]  # secnd column is the final   cpts, one cpt per row
-  confInterval <- segmented::confint.segmented(model_cpt)
-
-  plot <- ggplot2::ggplot(df, ggplot2::aes(x = id, y = eventCount)) +
+  cptsInitial <- segmentedModel$model$psi[1:ncpts_est, 1]  # first column is the initial cpts, one cpt per row
+  cptsSegmented <- segmentedModel$model$psi[1:ncpts_est, 2]  # secnd column is the final   cpts, one cpt per row
+  confInterval <- segmentedModel$confint
+  my.fitted <- stats::fitted(segmentedModel$model)
+  my.model <- data.frame(eventCount = my.fitted, id = trendData$id)
+  
+  plot <- ggplot2::ggplot(trendData, ggplot2::aes(x = id, y = eventCount)) +
     ggplot2::geom_point(shape = 16, size = 2, color = "black") +
-    ggplot2::scale_x_continuous(breaks = as.vector(df$id), labels = as.vector(df$monthYear)) +
-    ggplot2::labs(x = "Time", y = "Drug Exposures (n)") +
+    ggplot2::scale_x_continuous(breaks = as.vector(trendData$id), labels = as.vector(trendData$yearMonth)) +
+    ggplot2::labs(x = xAxisLabel, y = yAxisLabel) +
     ggplot2::geom_line(data = my.model, color = "blue", ggplot2::aes(x = id, y = eventCount))
   
   # Plot the initial change point specified
-  plot <- plot + ggplot2::geom_vline(xintercept=cpts_initial, linetype="longdash", color="gray", size = 1)
+  plot <- plot + ggplot2::geom_vline(xintercept=cptsInitial, linetype="longdash", color="gray", size = 1)
   
   # add estimated cpts in red
-  for (cp in 1:length(cpts_segmented)) {
+  for (cp in 1:length(cptsSegmented)) {
     # Add a vertical line and data point for the breakpoint
-    bp <- round(cpts_segmented[cp])
+    bp <- round(cptsSegmented[cp])
     breakpoint <- data.frame(id = bp, eventCount = my.fitted[bp])
     plot <- plot + ggplot2::geom_point(data = breakpoint, color = "red", size = 3, shape=17) +
       #ggplot2::geom_vline(xintercept=bp, linetype="longdash", color="red", size = 1) +
       # Add the confidence interval for the change point
-      ggplot2::annotate("pointrange", 
-                        x = breakpoint$id, 
-                        y = breakpoint$eventCount, 
-                        xmin = max(1,confInterval[2]), 
-                        xmax = round(confInterval[3]),
-                        colour = "red", 
-                        linetype="longdash", 
-                        size = .5, 
-                        alpha = .5)
-  }
-  plot
+      #ggplot2::geom_pointrange(orientation="x",ggplot2::aes(ymin=confInterval[2],ymax=confInterval[3],color="red"))
+      #ggplot2::geom_hline(ggplot2::aes(xmin=confInterval[2],xmax=confInterval[3],color="red"))
+      if (!is.null(confInterval)) {
+        ggplot2::annotate("pointrange", x = breakpoint$id, y = breakpoint$eventCount, xmin = max(1,confInterval[2]), xmax = round(confInterval[3]),
+                          colour = "red", linetype="longdash", size = .5, alpha = .5)
+      }
+  }  
+  
   return(plot)
 }
+
+getModelFileName <- function(modelName,
+                             cohortDefinitionId,
+                             eventCohortDefinitionId,
+                             windowId,
+                             databaseId) {
+  return(sprintf("%s_t%s_e%s_w%s_%s.rds",
+                 modelName,
+                 cohortDefinitionId,
+                 eventCohortDefinitionId,
+                 windowId,
+                 databaseId))
+}
+
 
 shinyServer(function(input, output, session) {
   output$cohortCountsTable <- renderDataTable({
@@ -211,16 +221,14 @@ shinyServer(function(input, output, session) {
   })
   
   output$tsPlot <- renderPlot({
-    resultModel <- readRDS("data/linear_t1000_e2000_w1_cdm_optum_ehr_covid_v1547.rds")
-    dexTrend <- trendsByMonthYear[trendsByMonthYear$cohortDefinitionId == 1000 & 
-                                    trendsByMonthYear$eventCohortDefinitionId == 2000 &
-                                    trendsByMonthYear$windowId == 1 & 
-                                    trendsByMonthYear$databaseId == 'cdm_optum_ehr_covid_v1547',]
-    dexTrend <- dexTrend[order(dexTrend$year, dexTrend$month), ]
-    dexTrend <- dexTrend %>% mutate(id = row_number(), 
-                                    monthYear = paste(month, year, sep="-"))
-    plot <- plotCpdSegmented(dexTrend,
-                             model_cpt = resultModel[[1]]$models)
+    resultModelFileName <- getModelFileName(tolower(input$modelType),
+                                            input$targetCohort,
+                                            input$eventCohort,
+                                            input$timeWindow,
+                                            input$databases)
+    print(resultModelFileName)
+    resultModel <- readRDS(file.path("data", resultModelFileName))
+    plot <- ggplotCpd(resultModel$trendData, segmentedModel = resultModel$o.seg.1)
     return(plot)
   }, res = 100)
   
