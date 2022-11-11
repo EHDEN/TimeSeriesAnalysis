@@ -7,14 +7,13 @@
 preMergeResultsFiles(dataFolder)
 }
 \arguments{
-\item{dataFolder}{folder where the exported zip files are stored. Use
-the extractTimeSeriesData function to generate these 
-zip files. Zip files containing results from multiple 
+\item{dataFolder}{folder where the exported zip files are stored. Use the extractTimeSeriesData
+function to generate these zip files. Zip files containing results from multiple
 databases can be placed in the same folder.}
 }
 \description{
-If there are many results files, starting the Shiny app may take a very long time. This function 
+If there are many results files, starting the Shiny app may take a very long time. This function
 already does most of the preprocessing, increasing loading speed.
-
-The merged data will be stored in the same folder, and will automatically be recognized by the Shiny app.
+The merged data will be stored in the same folder, and will automatically be recognized by the
+Shiny app.
 }

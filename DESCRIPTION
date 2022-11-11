@@ -8,24 +8,33 @@ Authors@R: c(
 	)
 Maintainer: Anthony G. Sena <asena5@its.jnj.com>
 Description: Time series analysis exploration for cohorts generated against the OMOP Common Data Model
-License: file LICENSE
-VignetteBuilder: knitr
 Depends:
-  DatabaseConnector (>= 4.0.0)
+    DatabaseConnector (>= 5.0.2),
+    dplyr,
+    R (>= 2.10)
 Imports:
-  ParallelLogger (>= 2.0.1),
-  SqlRender (>= 1.7.0),
-  CohortGenerator,
-  readr,
+  checkmate,
   changepoint,
-  segmented
+  CohortGenerator (>= 0.7.0),
+  ocp (>= 0.1),
+  ParallelLogger (>= 3.0.1),
+  readr,
+  segmented (>= 1.6.0),
+  SqlRender (>= 1.7.0)
 Suggests:
+  DT,
+  htmltools,
   knitr,
-  rmarkdown
+  rmarkdown,
+  shiny,
+  shinydashboard,
+  shinyWidgets
 Remotes:
-  anthonysena/CohortGenerator
+  OHDSI/CohortGenerator
+License: Apache License
+VignetteBuilder: knitr
 URL: https://github.com/EHDEN/TimeSeriesAnalysis
 BugReports: https://github.com/EHDEN/TimeSeriesAnalysis/issues
+RoxygenNote: 7.2.1
 Encoding: UTF-8
-LazyData: TRUE
-RoxygenNote: 7.1.1
+Language: en-US
