@@ -1,8 +1,8 @@
 #' Create a parameter object for the function createOcpModel
 #'
 #' @details
-#' Create an object defining the parameter values for use with the 
-#' createOcpModel function 
+#' Create an object defining the parameter values for use with the
+#' createOcpModel function
 #'
 #' @param oCPD   ocp object computed in a previous run of an algorithm. it can be built upon with the input data points, as long as the settings for both are the same.
 #' @param missPts	This setting indicates how to deal with missing points (e.g. NA). The options are: "mean", "prev", "none", and a numeric value. If the data is multivariate. The numeric replacement value could either be a single value which would apply to all dimensions, or a vector of the same length as the number of dimensions of the data.
@@ -20,28 +20,29 @@
 #' @param getR	To output the full R matrix, set this setting to TRUE. Outputting this matrix causes a major slow down in efficiency.
 #' @param optionalOutputs	Output additional values calculated during running the algorithm, including a matrix containing all the input data, the predictive probability vectors at each step of the algorithm, and the vector of means at each step of the algorithm.
 #' @param printupdates	This setting prints out updates on the progress of the algorithm if set to TRUE.
-#' 
-#' 
+#'
+#'
 #' @seealso [ocp::onlineCPD()] which this function wraps its arguments.
 #'
 #' @export
 createOcpArgs <- function(oCPD = NULL,
                           missPts = "none",
-                          hazardFunc = function(x, lambda) {ocp::const_hazard(x, lambda = 100)},
+                          hazardFunc = function(x, lambda) {
+                            ocp::const_hazard(x, lambda = 100)
+                          },
                           probModel = list("g"),
                           initParams = list(list(m = 0, k = 0.01, a = 0.01, b = 1e-04)),
-                          multivariate = FALSE, 
+                          multivariate = FALSE,
                           cpthreshold = 0.5,
-                          truncRlim = .Machine$double.xmin, 
+                          truncRlim = .Machine$double.xmin,
                           minRlength = 1,
-                          maxRlength = 10^4, 
-                          minsep = 1, 
-                          maxsep = 10^4, 
+                          maxRlength = 10^4,
+                          minsep = 1,
+                          maxsep = 10^4,
                           timing = FALSE,
-                          getR = FALSE, 
-                          optionalOutputs = FALSE, 
-                          printupdates = FALSE
-                        ) {
+                          getR = FALSE,
+                          optionalOutputs = FALSE,
+                          printupdates = FALSE) {
   analysis <- list()
   for (name in names(formals(createOcpArgs))) {
     analysis[[name]] <- get(name)
@@ -67,30 +68,32 @@ createOcpModel <- function(tsData,
   checkmate::assert_data_frame(x = tsData, min.rows = 1, add = errorMessages)
   checkmate::assert_class(x = ocpArgs, classes = c("OcpArgs"), add = errorMessages)
   checkmate::assert_choice(x = ocpArgs$missPts, choices = c("mean", "prev", "none"))
-  
+
   ocpModel <- NULL
   tryCatch(expr = {
-    ocpModel <- ocp::onlineCPD(datapts = tsData,
-                               oCPD = ocpArgs$oCPD,
-                               missPts = ocpArgs$missPts,
-                               hazard_func = ocpArgs$hazardFunc,
-                               probModel = ocpArgs$probModel,
-                               init_params = ocpArgs$initParams,
-                               multivariate = ocpArgs$multivariate,
-                               cpthreshold = ocpArgs$cpthreshold,
-                               truncRlim = ocpArgs$truncRlim,
-                               minRlength = ocpArgs$minRlength,
-                               minsep = ocpArgs$minsep,
-                               maxsep = ocpArgs$maxsep,
-                               timing = ocpArgs$timing,
-                               getR = ocpArgs$getR,
-                               optionalOutputs = ocpArgs$optionalOutputs,
-                               printupdates = ocpArgs$printupdates)
+    ocpModel <- ocp::onlineCPD(
+      datapts = tsData$eventCount,
+      oCPD = ocpArgs$oCPD,
+      missPts = ocpArgs$missPts,
+      hazard_func = ocpArgs$hazardFunc,
+      probModel = ocpArgs$probModel,
+      init_params = ocpArgs$initParams,
+      multivariate = ocpArgs$multivariate,
+      cpthreshold = ocpArgs$cpthreshold,
+      truncRlim = ocpArgs$truncRlim,
+      minRlength = ocpArgs$minRlength,
+      minsep = ocpArgs$minsep,
+      maxsep = ocpArgs$maxsep,
+      timing = ocpArgs$timing,
+      getR = ocpArgs$getR,
+      optionalOutputs = ocpArgs$optionalOutputs,
+      printupdates = ocpArgs$printupdates
+    )
   }, error = function(e) {
     warning(e)
   }, warning = function(e) {
     warning(e)
   })
-  
-  invisible(ocpModel)
+
+  invisible(list(tsData = tsData, model = ocpModel))
 }

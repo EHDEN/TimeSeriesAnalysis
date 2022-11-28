@@ -1,17 +1,15 @@
 #' Create a parameter object for the function getCohortTimeSeriesData
 #'
 #' @details
-#' Create an object defining the parameter values for use with the 
+#' Create an object defining the parameter values for use with the
 #' @seealso [getCohortTimeSeriesData]
 #'
-#' @param cohortIds  A vector of cohort Ids; leave empty to use all cohorts in the cohort table
-#' @param timeUnits  The time units (year, month, day) to use when extracting the cohort time series.
-#' @param sortBy  	 The value from the cohort table to sort by: cohortStartDate or cohortEndDate
+#' @param cohortIds  A vector of cohort Ids; set to -1 to use all cohorts in the cohort table
+#' @param timeInterval  The time interval (year, month, day) to use when extracting the cohort time series.
 #'
 #' @export
-createCohortTimeSeriesArgs <- function(cohortIds = c(),
-                                       timeUnits = "month",
-                                       sortBy = "cohortStartDate") {
+createCohortTimeSeriesArgs <- function(cohortIds = -1,
+                                       timeInterval = "month") {
   analysis <- list()
   for (name in names(formals(createCohortTimeSeriesArgs))) {
     analysis[[name]] <- get(name)
@@ -21,27 +19,46 @@ createCohortTimeSeriesArgs <- function(cohortIds = c(),
 }
 
 #' Retrieve time series data for one or more cohorts
-#' 
-#' @details 
+#'
+#' @details
 #' This function will retrieve a data frame representing
 #' entry events for one or more cohorts grouped into time intervals
 #' as specified by the cohortTimeSeriesArgs
-#' 
-#' 
+#'
+#' @template Connection
+#'
+#' @template CdmDatabaseSchema
+#'
+#' @template TempEmulationSchema
+#'
+#' @template CohortDatabaseSchema
+#'
+#' @template CohortTable
+#'
+#' @param outputFolder The location where the cohort time series data results will be written.
+#'
+#' @param databaseId The database identifier for the time series data
+#'
+#' @param cohortTimeSeriesArgs The cohort time series arguments. @seealso[createCohortTimeSeriesArgs] for more information.
+#'
 #' @export
 getCohortTimeSeriesData <- function(connectionDetails = NULL,
-                              connection = NULL,
-                              cdmDatabaseSchema,
-                              tempEmulationSchema = NULL,
-                              cohortDatabaseSchema,
-                              cohortTable = "cohort",
-                              exportFolder,
-                              cohortTimeSeriesArgs) {
+                                    connection = NULL,
+                                    cdmDatabaseSchema,
+                                    tempEmulationSchema = NULL,
+                                    cohortDatabaseSchema,
+                                    cohortTable = "cohort",
+                                    outputFolder,
+                                    databaseId,
+                                    cohortTimeSeriesArgs) {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assert_class(x = cohortTimeSeriesArgs, classes = c("cohortTimeSeriesArgs"), add = errorMessages)
+  checkmate::assert_choice(x = cohortTimeSeriesArgs$timeInterval, choices = c("day", "month", "year"))
   start <- Sys.time()
 
   # Startup Checks -----
-  if (!file.exists(exportFolder)) {
-    dir.create(exportFolder, recursive = TRUE)
+  if (!file.exists(outputFolder)) {
+    dir.create(outputFolder, recursive = TRUE)
   }
 
   if (is.null(connection)) {
@@ -51,50 +68,50 @@ getCohortTimeSeriesData <- function(connectionDetails = NULL,
 
   # Extract the time series information  -----------------------------------------------------
   message("Get time series data")
-  cohortCountsByMonthYear <- getCohortCountsByMonthYear(connection = connection,
-                                                        cohortDatabaseSchema = cohortDatabaseSchema,
-                                                        cohortTable = cohortTable)
-  if (nrow(cohortCountsByMonthYear) <= 0) {
-    warning("No cohort counts by month and year found. Did you generate the cohorts?")
-  }
-  writeToCsv(cohortCountsByMonthYear, file.path(exportFolder, "cohort_count_by_month_year.csv"))
-
-  # Extract the secular trend data for each target/event combination -------
-  trendsByTargetEvent <- createAndGetTrendsByTargetEvent(connection = connection,
-                                                         cohortDatabaseSchema = cohortDatabaseSchema,
-                                                         cohortTable = cohortTable,
-                                                         tempEmulationSchema = tempEmulationSchema)
-  if (nrow(trendsByTargetEvent) > 0) {
-    trendsByTargetEvent$databaseId <- databaseId
-    trendsByTargetEvent <- enforceMinCellValue(trendsByTargetEvent, "eventCount", minCellCount)
+  tsData <- executeCohortTimeSeriesDataQuery(
+    connection = connection,
+    cohortDatabaseSchema = cohortDatabaseSchema,
+    cohortTable = cohortTable,
+    cohortTimeSeriesArgs = cohortTimeSeriesArgs
+  )
+  if (nrow(tsData) <= 0) {
+    warning("No cohort time series data found. Did you generate the cohorts?")
   } else {
-    ParallelLogger::logWarn("No trends by month and year found. Did you generate the cohorts?")
+    tsData$databaseId <- databaseId
   }
-  writeToCsv(trendsByTargetEvent, file.path(exportFolder, getTrendsFileName()))
-  
+  CohortGenerator::writeCsv(
+    x = tsData,
+    file = file.path(outputFolder, "cohort_time_series_data.csv")
+  )
+
   delta <- Sys.time() - start
-  ParallelLogger::logInfo(paste("Time series data extract took", signif(delta, 3), attr(delta, "units")))
+  rlang::inform(paste("Time series data extract took", signif(delta, 3), attr(delta, "units")))
+  invisible(tsData)
 }
 
-getCohortCountsByMonthYear <- function(connectionDetails = NULL,
-                                       connection = NULL,
-                                       cohortDatabaseSchema,
-                                       cohortTable = "cohort") {
-  start <- Sys.time()
-
-  if (is.null(connection)) {
-    connection <- DatabaseConnector::connect(connectionDetails)
-    on.exit(DatabaseConnector::disconnect(connection))
-  }
-  sql <- SqlRender::loadRenderTranslateSql(sqlFilename = "CohortCountsByMonthYear.sql",
-                                           packageName = getThisPackageName(),
-                                           dbms = connection@dbms,
-                                           cohort_database_schema = cohortDatabaseSchema,
-                                           cohort_table = cohortTable)
+executeCohortTimeSeriesDataQuery <- function(connection,
+                                             cohortDatabaseSchema,
+                                             cohortTable = "cohort",
+                                             cohortTimeSeriesArgs) {
+  sql <- SqlRender::readSql(
+    system.file(
+      "sql/sql_server/CohortTimeSeries.sql", 
+      package = "TimeSeriesAnalysis",
+      mustWork = TRUE
+    )
+  )
+  sql <- SqlRender::render(
+    sql = sql,
+    cohort_database_schema = cohortDatabaseSchema,
+    cohort_table = cohortTable,
+    cohort_definition_id = cohortTimeSeriesArgs$cohortIds,
+    time_interval = cohortTimeSeriesArgs$timeInterval,
+    warnOnMissingParameters = TRUE
+  )
+  sql <- SqlRender::translate(
+    sql = sql,
+    targetDialect = connection@dbms
+  )
   trends <- DatabaseConnector::querySql(connection, sql, snakeCaseToCamelCase = TRUE)
-  delta <- Sys.time() - start
-  ParallelLogger::logInfo(paste("Get cohorts counts by month and year took",
-                                signif(delta, 3),
-                                attr(delta, "units")))
   return(trends)
 }

@@ -1,8 +1,10 @@
 #' @export
-launchShinyApp <- function(outputFolder, shinySettings = list(storage = "filesystem",
-                                                              dataFolder = outputFolder,
-                                                              dataFile = "PreMerged.RData")) {
-  appDir <- system.file("shiny/ResultsExplorer", package = getThisPackageName(), mustWork = TRUE)
+launchShinyApp <- function(outputFolder, shinySettings = list(
+                             storage = "filesystem",
+                             dataFolder = outputFolder,
+                             dataFile = "PreMerged.RData"
+                           )) {
+  appDir <- system.file("shiny/ResultsExplorer", package = "TimeSeriesAnalysis", mustWork = TRUE)
   .GlobalEnv$shinySettings <- shinySettings
   on.exit(rm(shinySettings, envir = .GlobalEnv))
   shiny::runApp(appDir)
@@ -29,9 +31,10 @@ preMergeResultsFiles <- function(dataFolder) {
     tableName <- gsub(".csv$", "", file)
     camelCaseName <- SqlRender::snakeCaseToCamelCase(tableName)
     data <- readr::read_csv(file.path(folder, file),
-                            col_types = readr::cols(),
-                            guess_max = 1e+07,
-                            locale = readr::locale(encoding = "UTF-8"))
+      col_types = readr::cols(),
+      guess_max = 1e+07,
+      locale = readr::locale(encoding = "UTF-8")
+    )
     colnames(data) <- SqlRender::snakeCaseToCamelCase(colnames(data))
 
     if (!overwrite && exists(camelCaseName, envir = .GlobalEnv)) {
@@ -39,14 +42,16 @@ preMergeResultsFiles <- function(dataFolder) {
       if (nrow(existingData) > 0) {
         if (nrow(data) > 0) {
           if (all(colnames(existingData) %in% colnames(data)) && all(colnames(data) %in% colnames(existingData))) {
-          data <- data[, colnames(existingData)]
+            data <- data[, colnames(existingData)]
           } else {
-          stop("Table columns do no match previously seen columns. Columns in ",
-               file,
-               ":\n",
-               paste(colnames(data), collapse = ", "),
-               "\nPrevious columns:\n",
-               paste(colnames(existingData), collapse = ", "))
+            stop(
+              "Table columns do no match previously seen columns. Columns in ",
+              file,
+              ":\n",
+              paste(colnames(data), collapse = ", "),
+              "\nPrevious columns:\n",
+              paste(colnames(existingData), collapse = ", ")
+            )
           }
         }
       }

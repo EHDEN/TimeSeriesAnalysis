@@ -1,26 +1,43 @@
 library(TimeSeriesAnalysis)
 library(dplyr)
+library(Eunomia)
 
-# Load example data from package
-data("drugData")
+# Export folder
+outputFolder <- "E:/Timeseries/"
+
+
+getEunomiaTimeSeriesData <- function() {
+  # Use Eunomia to generate a few cohorts
+  connectionDetails <- Eunomia::getEunomiaConnectionDetails()
+  Eunomia::createCohorts(connectionDetails = connectionDetails)
+  
+  # Get the time series data
+  cohortTimeSeriesArgs <- TimeSeriesAnalysis::createCohortTimeSeriesArgs()
+  TimeSeriesAnalysis::getCohortTimeSeriesData(connectionDetails = connectionDetails,
+                                              cdmDatabaseSchema = "main",
+                                              cohortDatabaseSchema = "main",
+                                              cohortTable = "cohort",
+                                              outputFolder = outputFolder,
+                                              cohortTimeSeriesArgs = cohortTimeSeriesArgs)
+  
+  data <- CohortGenerator::readCsv(file = file.path(outputFolder, "cohort_time_series_data.csv"))
+  invisible(data)
+}
+
+data(drugData)
+
+data <- drugData
+
+tsData <- data %>%
+  filter(cohortDefinitionId == 1) %>%
+  arrange(cohortStartDate) %>%
+  select(cohortStartDate, subjectCount) %>%
+  rename(eventDate = cohortStartDate,
+         eventCount = subjectCount)
 
 # Create the segmented model args
-segArgs <- createSegmentedArgs(modelType = "poisson",
-                               psi = 4,
-                               npsi = 1)
+segArgs <- createSegmentedArgs(modelType = "poisson")
 
-# Subset to a single cohort
-data <- drugData[drugData$cohortDefinitionId == 1, ]
-
-# Add the row_number ID for the ordering - this will
-# be done automatically in the pipeline but I may add
-# this to the package data object
-data <- data %>% mutate(id = row_number())
-
-# Create the segmented model
-# m <- createSegmentedModel(tsData = data,
-#                           segmentedArgs = segArgs)
-#summary(m)
 
 # Doing this with another set of parameters
 segArgs2 <- createSegmentedArgs(modelType = "linear",
@@ -32,16 +49,10 @@ segArgs2 <- createSegmentedArgs(modelType = "linear",
                                                                  it.max = 100, 
                                                                  K=1, 
                                                                  display=TRUE))
-# Create the segmented model
-# m2 <- createSegmentedModel(tsData = data,
-#                            segmentedArgs = segArgs2)
-# 
-#summary(m2)
-
 # Now use the ocp default settings
 ocpArgs <- TimeSeriesAnalysis::createOcpArgs()
 
-# Now use the analysis approach
+# Create the full set of analyses
 tsAnalysis1 <- createTsAnalysis(analysisId = 1,
                                 description = "Poisson model, single change point",
                                 tsArgs = segArgs)
@@ -54,21 +65,23 @@ tsAnalysis3 <- createTsAnalysis(analysisId = 3,
 
 tsAnalysisList <- list(tsAnalysis1, tsAnalysis2, tsAnalysis3)
 
-#debugonce(runTsAnalyses)
-
-# # TODO - Incorporate the logic for extracting time series data from cohort table
-# # and save it for use in the modeling
-# message("Extracting time series data....down the road.")
-# # For now use the drug data example data
-# data("drugData")
-# data <- drugData
-# cohortIds <- unique(data$cohortDefinitionId)
-
-runTsAnalyses(tsData = data$eventCount,
+# Run the TS analyses
+runTsAnalyses(tsData = tsData,
               tsDataId = 1,
-              outputFolder = "E:/Timeseries/",
+              outputFolder = outputFolder,
               tsAnalysisList = tsAnalysisList)
 
-ParallelLogger::saveSettingsToJson(tsAnalysisList, fileName = "E:/Timeseries/specs.json")
+# Save the settings used to build the models
+ParallelLogger::saveSettingsToJson(tsAnalysisList, fileName = file.path(outputFolder, "specs.json"))
 
-ocpModel1 <- readRDS(file = "E:/Timeseries/Analysis3/ts_d1.rds")
+# Inspect the models
+m <- readRDS(file = "E:/Timeseries/Analysis1/ts_d1.rds")
+TimeSeriesAnalysis::plotSegmented(m$tsData, m$model)
+
+m2 <- readRDS(file = "E:/Timeseries/Analysis2/ts_d1.rds")
+TimeSeriesAnalysis::plotSegmented(m2$tsData, m2$model)
+
+m3 <- readRDS(file = "E:/Timeseries/Analysis3/ts_d1.rds")
+#debugonce(TimeSeriesAnalysis::plotOcp)
+TimeSeriesAnalysis::plotOcp(m3$tsData, m3$model)
+

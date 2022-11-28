@@ -7,9 +7,11 @@
 #' \describe{
 #'   \item{cohortDefinitionId}{The cohort definition id}
 #'   \item{cohortName}{The drug cohort of interest}
-#'   \item{month}{The month of the cohort}
-#'   \item{year}{The year of the cohort}
-#'   \item{eventCount}{The number of people in the cohort for the month/year combination}
+#'   \item{cohortStartDate}{The cohort start date}
+#'   \item{timeInterval}{The time interval of capture for the time series data}
+#'   \item{subjectCount}{The number of people in the cohort for the month combination}
+#'   \item{eventCount}{The number of events in the cohort for the month combination. For cohorts, people may have > 1 event}
 #'   \item{databaseId}{The database ID that contributed the data}
 #' }
+#' @usage data(drugData)
 "drugData"

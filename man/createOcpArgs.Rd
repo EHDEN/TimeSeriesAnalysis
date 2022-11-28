@@ -62,7 +62,7 @@ createOcpArgs(
 Create a parameter object for the function createOcpModel
 }
 \details{
-Create an object defining the parameter values for use with the 
+Create an object defining the parameter values for use with the
 createOcpModel function
 }
 \seealso{

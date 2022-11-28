@@ -1,0 +1,107 @@
+---
+title: "Using the TimeSeriesAnalysis Package"
+author: "Anthony G. Sena"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: 
+    toc: yes     
+  html_document:
+    number_sections: yes
+    toc: yes
+vignette: >
+  %\VignetteIndexEntry{Using the TimeSeriesAnalysis Package}
+  %\VignetteEncoding{UTF-8}    
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(TimeSeriesAnalysis)
+library(dplyr)
+```
+
+# Overview
+
+This document aims to describe the various functions of the TimeSeriesAnalysis package and how it may be used for Risk Minimisation Measures (RMM) effectiveness.
+
+## Background
+
+Once a health intervention such as a drug or medical product has been approved for use, regulatory authorities can introduce risk minimisation measures (RMM) to ensure and improve its safe use. Typical examples of RMM include changes in the conditions of marketing authorisation, use or label characteristics. Evaluating the impact of such regulatory measures is needed to measure immediate as well as long-term effects on drug uptake and use in the community. The same may be said for public health interventions in general. While randomised control trials (RCTs) remain the gold standard for RMM evaluation, they can be costly and selected. Established alternatives include observational studies using routinely-collected or cohort data. However, a recent study by the European Medicines Agency (EMA) found that registries that are commonly required for post-marking purposes frequently experience delays [citation needed]. Development of a standardised pipeline for analysis of existing data sources harmonised to the OMOP Common Data Model (OMOP CDM) has the potential to accelerating such studies and result in rapid, reproducible evidence.
+
+## Package Usage
+
+<TODO: DESCRIBE THE PIPELINE STEPS>
+
+- Design cohorts
+- Extract Time Series data for each cohort
+- Define model parameters
+- Build models for each cohort
+- Review models via Shiny
+
+## Designing Cohorts
+
+Resources:
+
+- Designing Cohorts: [https://ohdsi.github.io/TheBookOfOhdsi/Cohorts.html](https://ohdsi.github.io/TheBookOfOhdsi/Cohorts.html)
+- Atlas Course: [https://academy.ehden.eu/enrol/index.php?id=8](https://academy.ehden.eu/enrol/index.php?id=8)
+
+## Extracting Time Series Data
+
+<TODO: EXPLAIN CODE>
+
+```{r eval=FALSE}
+data(drugData)
+
+data <- drugData
+
+tsData <- data %>%
+  filter(cohortDefinitionId == 1) %>%
+  arrange(cohortStartDate) %>%
+  select(cohortStartDate, subjectCount) %>%
+  rename(eventDate = cohortStartDate,
+         eventCount = subjectCount)
+
+# Create the segmented model args
+segArgs <- createSegmentedArgs(modelType = "poisson")
+
+
+# Doing this with another set of parameters
+segArgs2 <- createSegmentedArgs(modelType = "linear",
+                                psi = list(id = NA),
+                                npsi = 1,
+                                control = segmented::seg.control(fix.npsi=FALSE, 
+                                                                 n.boot=100, 
+                                                                 tol=1e-7, 
+                                                                 it.max = 100, 
+                                                                 K=1, 
+                                                                 display=TRUE))
+# Now use the ocp default settings
+ocpArgs <- TimeSeriesAnalysis::createOcpArgs()
+
+# Create the full set of analyses
+tsAnalysis1 <- createTsAnalysis(analysisId = 1,
+                                description = "Poisson model, single change point",
+                                tsArgs = segArgs)
+tsAnalysis2 <- createTsAnalysis(analysisId = 2,
+                                description = "Linear model, single change point, more involved control settings",
+                                tsArgs = segArgs2)
+tsAnalysis3 <- createTsAnalysis(analysisId = 3,
+                                description = "Bayesian Online Changepoint model",
+                                tsArgs = ocpArgs)
+
+tsAnalysisList <- list(tsAnalysis1, tsAnalysis2, tsAnalysis3)
+
+# Run the TS analyses
+runTsAnalyses(tsData = tsData,
+              tsDataId = 1,
+              outputFolder = outputFolder,
+              tsAnalysisList = tsAnalysisList)
+
+```
+
+## Reviewing Results
+
+<TODO: Describe results review>
+

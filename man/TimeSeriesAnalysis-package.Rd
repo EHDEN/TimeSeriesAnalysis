@@ -6,7 +6,7 @@
 \alias{TimeSeriesAnalysis-package}
 \title{TimeSeriesAnalysis: Time series analysis exploration for cohorts generated against the OMOP Common Data Model}
 \description{
-Time series analysis exploration for cohorts generated against the OMOP Common Data Model
+A package for time series analysis exploration for cohorts generated against the OMOP Common Data Model.
 }
 \seealso{
 Useful links:

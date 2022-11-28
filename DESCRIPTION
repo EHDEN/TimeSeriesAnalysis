@@ -7,30 +7,35 @@ Authors@R: c(
 	person("Sara", "Khalid", role = c("aut"))
 	)
 Maintainer: Anthony G. Sena <asena5@its.jnj.com>
-Description: Time series analysis exploration for cohorts generated against the OMOP Common Data Model
+Description: A package for time series analysis exploration for cohorts generated against the OMOP Common Data Model.
 Depends:
-    DatabaseConnector (>= 5.0.2),
-    dplyr,
-    R (>= 2.10)
+  DatabaseConnector (>= 5.0.2),
+  R (>= 2.10)
 Imports:
   checkmate,
-  changepoint,
   CohortGenerator (>= 0.7.0),
+  dplyr,
+  ggplot2,
+  lubridate,
   ocp (>= 0.1),
   ParallelLogger (>= 3.0.1),
   readr,
+  rlang,
   segmented (>= 1.6.0),
   SqlRender (>= 1.7.0)
 Suggests:
-  DT,
-  htmltools,
-  knitr,
-  rmarkdown,
-  shiny,
-  shinydashboard,
-  shinyWidgets
+    DT,
+    Eunomia,
+    htmltools,
+    knitr,
+    rmarkdown,
+    shiny,
+    shinydashboard,
+    shinyWidgets,
+    testthat (>= 3.0.0)
 Remotes:
-  OHDSI/CohortGenerator
+  ohdsi/CohortGenerator,
+  ohdsi/Eunomia
 License: Apache License
 VignetteBuilder: knitr
 URL: https://github.com/EHDEN/TimeSeriesAnalysis
@@ -38,3 +43,5 @@ BugReports: https://github.com/EHDEN/TimeSeriesAnalysis/issues
 RoxygenNote: 7.2.1
 Encoding: UTF-8
 Language: en-US
+LazyData: true
+Config/testthat/edition: 3
