@@ -18,11 +18,15 @@ getEunomiaTimeSeriesData <- function() {
                                               cohortDatabaseSchema = "main",
                                               cohortTable = "cohort",
                                               outputFolder = outputFolder,
-                                              cohortTimeSeriesArgs = cohortTimeSeriesArgs)
+                                              cohortTimeSeriesArgs = cohortTimeSeriesArgs,
+                                              databaseId = "Eunomia")
   
   data <- CohortGenerator::readCsv(file = file.path(outputFolder, "cohort_time_series_data.csv"))
   invisible(data)
 }
+
+# TODO: Provide working example using other cohorts outside of Eunomia
+# https://ohdsi.github.io/CohortGenerator/articles/GeneratingCohorts.html
 
 data(drugData)
 
