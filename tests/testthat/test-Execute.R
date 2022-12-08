@@ -25,7 +25,7 @@ test_that("Execution works with Eunomia", {
     cohortTable = "cohort"
   )
   
-  outputFolder <- "E:/Timeseries/Eunomia" #tempfile()
+  outputFolder <- tempfile()
   cohortTimeSeriesArgs <- createCohortTimeSeriesArgs()
   
   # Create the time series analyses
