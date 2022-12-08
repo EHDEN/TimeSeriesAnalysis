@@ -15,6 +15,7 @@ executeTimeSeriesAnalyses(
   cohortTable = "cohort",
   outputFolder,
   databaseId,
+  cohortDefinitionSet,
   tsDataFieldName = "subjectCount",
   cohortTimeSeriesArgs,
   tsAnalysisList
@@ -49,6 +50,8 @@ this should include both the database and schema name, for example
 \item{outputFolder}{The location where the cohort time series data results will be written.}
 
 \item{databaseId}{The database identifier for the time series data}
+
+\item{cohortDefinitionSet}{The cohort definition set for the cohorts used for the analysis}
 
 \item{tsDataFieldName}{The time series data field name to use. This will be either the "subjectCount" or "eventCount" as 
 computed based on the cohort.}

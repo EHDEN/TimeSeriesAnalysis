@@ -1,4 +1,22 @@
 test_that("Execution works with Eunomia", {
+  # First construct a cohort definition set: an empty 
+  # data frame with the cohorts to generate
+  cohortDefinitionSet <- CohortGenerator::createEmptyCohortDefinitionSet()
+  
+  # Fill the cohort set using cohorts included in the Eunomia
+  # package as an example
+  eunomiaCohortSettings <- CohortGenerator::readCsv(system.file("settings/CohortsToCreate.csv", package = "Eunomia"),
+                                                    warnOnCaseMismatch = FALSE)
+  for (i in 1:nrow(eunomiaCohortSettings)) {
+    cohortJsonFileName <- cohortJsonFiles[i]
+    cohortName <- eunomiaCohortSettings$name[i]
+    cohortSql <- SqlRender::readSql(sourceFile = system.file(file.path("sql/sql_server", paste0(cohortName, ".sql")), package = "Eunomia"))
+    cohortDefinitionSet <- rbind(cohortDefinitionSet, data.frame(cohortId = i,
+                                                         cohortName = cohortName, 
+                                                         sql = cohortSql,
+                                                         stringsAsFactors = FALSE))
+  }
+  
   connectionDetails <- Eunomia::getEunomiaConnectionDetails()
   Eunomia::createCohorts(
     connectionDetails = connectionDetails,
@@ -7,7 +25,7 @@ test_that("Execution works with Eunomia", {
     cohortTable = "cohort"
   )
   
-  outputFolder <- tempfile()
+  outputFolder <- "E:/Timeseries/Eunomia" #tempfile()
   cohortTimeSeriesArgs <- createCohortTimeSeriesArgs()
   
   # Create the time series analyses
@@ -43,6 +61,7 @@ test_that("Execution works with Eunomia", {
                             cohortTable = "cohort",
                             outputFolder = outputFolder,
                             databaseId = "Eunomia",
+                            cohortDefinitionSet = cohortDefinitionSet,
                             cohortTimeSeriesArgs = cohortTimeSeriesArgs,
                             tsAnalysisList = tsAnalysisList)
   

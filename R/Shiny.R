@@ -6,7 +6,7 @@ launchShinyApp <- function(outputFolder, shinySettings = list(
                            )) {
   appDir <- system.file("shiny/ResultsExplorer", package = "TimeSeriesAnalysis", mustWork = TRUE)
   .GlobalEnv$shinySettings <- shinySettings
-  on.exit(rm(shinySettings, envir = .GlobalEnv))
+  #on.exit(rm(shinySettings, envir = .GlobalEnv))
   shiny::runApp(appDir)
 }
 
@@ -81,3 +81,21 @@ preMergeResultsFiles <- function(dataFolder) {
   save(list = tableNames, file = file.path(dataFolder, "PreMerged.RData"), compress = TRUE)
   ParallelLogger::logInfo("Merged data saved in ", file.path(dataFolder, "PreMerged.RData"))
 }
+
+#' 
+#' #' Zip results files for sharing and for use in the Shiny results viewer
+#' #'
+#' #' @description
+#' #' This function will ZIP the results of running the @seealso [executeTimeSeriesAnalyses] function.
+#' #' This function is automatically invoked by using @seealso [executeTimeSeriesAnalyses] and we
+#' #' expose this function if you'd like to share the results of running analyses in this package
+#' #' outside of the @seealso [executeTimeSeriesAnalyses] function.
+#' #'
+#' #' @param dataFolder   folder where the exported zip files are stored. Use the extractTimeSeriesData
+#' #'                     function to generate these zip files. Zip files containing results from multiple
+#' #'                     databases can be placed in the same folder.
+#' #'
+#' #' @export
+#' zipResults <- function(dataFolder, databaseId) {
+#'   
+#' }

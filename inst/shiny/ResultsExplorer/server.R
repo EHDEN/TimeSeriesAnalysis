@@ -142,24 +142,24 @@ ggplotCpd <- function(trendData, segmentedModel, xAxisLabel = "Time", yAxisLabel
   return(plot)
 }
 
-getModelFileName <- function(modelName,
-                             cohortDefinitionId,
-                             eventCohortDefinitionId,
-                             windowId,
-                             databaseId) {
-  return(sprintf("%s_t%s_e%s_w%s_%s.rds",
-                 modelName,
-                 cohortDefinitionId,
-                 eventCohortDefinitionId,
-                 windowId,
-                 databaseId))
+getModelFileName <- function(analysisId, dataSetId) {
+  fileName <- sprintf("Analysis%d/ts_d%d.rds", analysisId, dataSetId)
+  invisible(fileName)
 }
 
 
 shinyServer(function(input, output, session) {
+  analysisId <- reactive({
+    return(analyses[analyses$description == input$tsAnalysis,]$analysisId[1])
+  })
+  
+  dataSetId <- reactive({
+    return(cohorts[cohorts$cohortName == input$targetCohort,]$cohortId[1])
+  })
+  
   output$cohortCountsTable <- renderDataTable({
     databaseIds <- unique(cohortCount$databaseId)
-    table <- cohortCount[,c("cohortId", "name", "databaseId", "cohortSubjects", "cohortEntries")]
+    table <- cohortCount[,c("cohortId", "cohortName", "databaseId", "cohortSubjects", "cohortEntries")]
     names(table) <- c("Cohort ID", "Name", "Database", "Subjects", "Entries")
     columnDefs = list(
       minCellCountDef(c(3,4))
@@ -177,14 +177,22 @@ shinyServer(function(input, output, session) {
   })
   
   output$tsPlot <- renderPlot({
-    resultModelFileName <- getModelFileName(tolower(input$modelType),
-                                            input$targetCohort,
-                                            input$eventCohort,
-                                            input$timeWindow,
-                                            input$databases)
+    resultModelFileName <- getModelFileName(analysisId = analysisId(),
+                                            dataSetId = dataSetId())
     print(resultModelFileName)
-    resultModel <- readRDS(file.path(dataFolder, resultModelFileName))
-    plot <- ggplotCpd(resultModel$trendData, segmentedModel = resultModel$o.seg.1)
+    analysisOutput <- readRDS(file.path(dataFolder, resultModelFileName))
+    
+    if ("SegmentedArgs" %in% class(analysisList[[analysisId()]]$tsArgs)) {
+      plot <- TimeSeriesAnalysis::plotSegmented(tsData = analysisOutput$tsData,
+                                                model = analysisOutput$model,
+                                                plotSubtitle = input$databases)
+    } else if ("OcpArgs" %in% class(analysisList[[analysisId()]]$tsArgs)) {
+      plot <- TimeSeriesAnalysis::plotOcp(tsData = analysisOutput$tsData,
+                                          model = analysisOutput$model,
+                                          plotSubtitle = input$databases)
+    } else {
+      stop(paste0("An unknown time series model found: ", class(analysisList[[analysisId()]]$tsArgs), ". Stopping the execution."))
+    }
     return(plot)
   }, res = 100)
   

@@ -18,7 +18,9 @@
 #'
 #' @param outputFolder The location where the cohort time series data results will be written.
 #' 
-#' @param databaseId The database identifier for the time series data 
+#' @param databaseId The database identifier for the time series data
+#' 
+#' @param cohortDefinitionSet The cohort definition set for the cohorts used for the analysis
 #' 
 #' @param tsDataFieldName The time series data field name to use. This will be either the "subjectCount" or "eventCount" as 
 #'                        computed based on the cohort.
@@ -36,11 +38,44 @@ executeTimeSeriesAnalyses <- function(connectionDetails = NULL,
                                       cohortTable = "cohort",
                                       outputFolder,
                                       databaseId,
+                                      cohortDefinitionSet,
                                       tsDataFieldName = "subjectCount",
                                       cohortTimeSeriesArgs,
                                       tsAnalysisList) {
   checkmate::assert_choice(tsDataFieldName, choices = c("subjectCount", "eventCount"))
   
+  if (is.null(connection)) {
+    connection <- DatabaseConnector::connect(connectionDetails)
+    on.exit(DatabaseConnector::disconnect(connection))
+  }
+  
+  if (!dir.exists(outputFolder)) {
+    dir.create(path = outputFolder, recursive =TRUE)
+  }
+  
+  # Save the cohorts
+  CohortGenerator::writeCsv(x = cohortDefinitionSet,
+                            file = file.path(outputFolder, "cohort.csv"))
+  
+  # Get the cohort counts for the cohorts of interest
+  cohortIds <- cohortTimeSeriesArgs$cohortIds
+  if (cohortIds == -1) {
+    cohortIds = c()
+  }
+  cohortCounts <- CohortGenerator::getCohortCounts(connection = connection,
+                                                   cohortDatabaseSchema = cohortDatabaseSchema,
+                                                   cohortTable = cohortTable,
+                                                   cohortIds = cohortIds,
+                                                   databaseId = databaseId)
+  CohortGenerator::writeCsv(x = cohortCounts,
+                            file = file.path(outputFolder, "cohort_count.csv"))
+
+  # Get database information
+  .createDatabaseMetaData(connection = connection,
+                          cdmDatabaseSchema = cdmDatabaseSchema,
+                          outputFolder = outputFolder,
+                          databaseId = databaseId)
+
   # Get the time series data for the cohorts of interest
   tsData <- getCohortTimeSeriesData(connectionDetails = connectionDetails,
                                     connection = connection,
@@ -70,4 +105,33 @@ executeTimeSeriesAnalyses <- function(connectionDetails = NULL,
                   outputFolder = outputFolder,
                   tsAnalysisList = tsAnalysisList)
   }
+}
+
+.createDatabaseMetaData <- function(connection, cdmDatabaseSchema, outputFolder, databaseId) {
+  sql <- "SELECT TOP 1 * FROM @cdm_database_schema.cdm_source;"
+  cdmSource <- renderTranslateQuerySql(connection = connection,
+                                       sql = sql,
+                                       snakeCaseToCamelCase = TRUE,
+                                       cdm_database_schema = cdmDatabaseSchema)
+  
+  sql <- "SELECT TOP 1 vocabulary_version  FROM @cdm_database_schema.vocabulary WHERE vocabulary_id = 'None';"
+  vocabVersion <- renderTranslateQuerySql(connection = connection,
+                                          sql = sql,
+                                          snakeCaseToCamelCase = TRUE,
+                                          cdm_database_schema = cdmDatabaseSchema)
+  
+  sql <- "SELECT MAX(observation_period_end_date) as max_obs_period_end_date
+  FROM @cdm_database_schema.observation_period;"
+  observationPeriodMax <- renderTranslateQuerySql(connection = connection,
+                                                  sql = sql,
+                                                  snakeCaseToCamelCase = TRUE,
+                                                  cdm_database_schema = cdmDatabaseSchema)
+  
+  database <- cdmSource %>%
+    mutate(vocabularyVersion = vocabVersion$vocabularyVersion,
+           databaseId = !!databaseId) %>%
+    bind_cols(observationPeriodMax)
+  
+  CohortGenerator::writeCsv(x = database,
+                            file = file.path(outputFolder, "database.csv"))
 }
