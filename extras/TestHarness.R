@@ -25,6 +25,20 @@ getEunomiaTimeSeriesData <- function() {
   invisible(data)
 }
 
+sara.plot <- function(o.seg, tsData2) {
+  # Code From Sara
+  plot(o.seg, conf.level=0.95, shade=TRUE, type = "l", xlab = "Time", ylab = "N Drugs", main = paste("Segmented Linear Regression, npsi = 1"))# plots regression lines of the two segments using the coeffs returned in o.seg
+  points(tsData2$eventDate,tsData2$eventCount, xlab = "Event Date", ylab = "Event Count", cex= 1.5, pch=16)# add the actual time series, ,type = "l"
+  #debugonce(segmented::plot.segmented)
+  plot(o.seg,add=TRUE,link=FALSE,lwd=2,col=3:5, lty=c(1,1)) # added fitted line using diff cols for diff segments
+  #debugonce(segmented::points.segmented)
+  points(o.seg, link=TRUE, col=2)# circle the brkpt
+  lines(o.seg,col=2,pch=19,bottom=FALSE,lwd=2) # add CI for the breakpoint
+  cpts_segmented = o.seg$psi[2] # the final brkpt
+  for(cp in 1:length(cpts_segmented)){
+    abline(v= cpts_segmented[cp], col = "red", lwd= 3,lty=2)}
+}
+
 # TODO: Provide working example using other cohorts outside of Eunomia
 # https://ohdsi.github.io/CohortGenerator/articles/GeneratingCohorts.html
 
@@ -34,6 +48,13 @@ data <- drugData
 
 tsData <- data %>%
   filter(cohortDefinitionId == 1) %>%
+  arrange(cohortStartDate) %>%
+  select(cohortStartDate, subjectCount) %>%
+  rename(eventDate = cohortStartDate,
+         eventCount = subjectCount)
+
+tsData2 <- data %>%
+  filter(cohortDefinitionId == 2) %>%
   arrange(cohortStartDate) %>%
   select(cohortStartDate, subjectCount) %>%
   rename(eventDate = cohortStartDate,
@@ -81,9 +102,11 @@ ParallelLogger::saveSettingsToJson(tsAnalysisList, fileName = file.path(outputFo
 # Inspect the models
 m <- readRDS(file = "E:/Timeseries/Analysis1/ts_d1.rds")
 TimeSeriesAnalysis::plotSegmented(m$tsData, m$model)
+sara.plot(m$model, m$tsData)
 
 m2 <- readRDS(file = "E:/Timeseries/Analysis2/ts_d1.rds")
 TimeSeriesAnalysis::plotSegmented(m2$tsData, m2$model)
+sara.plot(m2$model, m2$tsData)
 
 m3 <- readRDS(file = "E:/Timeseries/Analysis3/ts_d1.rds")
 #debugonce(TimeSeriesAnalysis::plotOcp)

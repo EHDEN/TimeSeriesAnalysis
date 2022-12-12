@@ -179,7 +179,7 @@ shinyServer(function(input, output, session) {
   output$tsPlot <- renderPlot({
     resultModelFileName <- getModelFileName(analysisId = analysisId(),
                                             dataSetId = dataSetId())
-    print(resultModelFileName)
+    #print(resultModelFileName)
     analysisOutput <- readRDS(file.path(dataFolder, resultModelFileName))
     
     if ("SegmentedArgs" %in% class(analysisList[[analysisId()]]$tsArgs)) {
