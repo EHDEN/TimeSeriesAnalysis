@@ -47,7 +47,7 @@ createSegmentedModel <- function(tsData,
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assert_data_frame(x = tsData, min.rows = 1, add = errorMessages)
   checkmate::assert_class(x = segmentedArgs, classes = c("SegmentedArgs"), add = errorMessages)
-  checkmate::assert_choice(x = segmentedArgs$modelType, choices = c("poisson", "linear"))
+  checkmate::assert_choice(x = segmentedArgs$modelType, choices = c("poisson", "linear"), add = errorMessages)
   
 
   # Convert the eventDate to a double for training the model
@@ -68,7 +68,7 @@ createSegmentedModel <- function(tsData,
       segModel <- segmented::segmented(
         obj = obj,
         seg.Z = segmentedArgs$seg.Z,
-        fixed.psi = segmentedArgs$fixedPsi,
+        fixed.psi = segmentedArgs$fixed.psi,
         control = segmentedArgs$control,
         model = segmentedArgs$model
       )
@@ -77,7 +77,7 @@ createSegmentedModel <- function(tsData,
         obj = obj,
         seg.Z = segmentedArgs$seg.Z,
         npsi = segmentedArgs$npsi,
-        fixed.psi = segmentedArgs$fixedPsi,
+        fixed.psi = segmentedArgs$fixed.psi,
         control = segmentedArgs$control,
         model = segmentedArgs$model
       )
@@ -86,21 +86,15 @@ createSegmentedModel <- function(tsData,
         obj = obj,
         seg.Z = segmentedArgs$seg.Z,
         psi = segmentedArgs$psi,
-        fixed.psi = segmentedArgs$fixedPsi,
+        fixed.psi = segmentedArgs$fixed.psi,
         control = segmentedArgs$control,
         model = segmentedArgs$model
       )
     }
   }, error = function(e) {
-    rlang::abort(
-      message = paste0("Error encountered when fitting segmented model: ", e$message)
-    )
+    message(paste0("Error encountered when fitting segmented model: ", e$message))
   }, warning = function(e) {
-    rlang::warn(
-      message = paste0("Warning encountered when fitting segmented model: ", e$message),
-      class = "createSegmentedModel",
-      e
-    )
+    message(paste0("Warning encountered when fitting segmented model: ", e$message))
   })
 
   invisible(list(tsData = tsData, model = segModel))

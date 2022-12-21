@@ -1,9 +1,9 @@
 #' Sample drug data for using the change detection time series methods
 #'
 #' A dataset containing the use of Hydroxychloroquine and Dexamethasone
-#' in COVID patients from a large US Claims dataset.
+#' in COVID & RA patients from a large US Claims dataset.
 #'
-#' @format A data frame with 20 rows and 6 variables:
+#' @format A data frame with 38 rows and 7 variables:
 #' \describe{
 #'   \item{cohortDefinitionId}{The cohort definition id}
 #'   \item{cohortName}{The drug cohort of interest}

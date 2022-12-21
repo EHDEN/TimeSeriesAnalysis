@@ -8,7 +8,6 @@ test_that("Execution works with Eunomia", {
   eunomiaCohortSettings <- CohortGenerator::readCsv(system.file("settings/CohortsToCreate.csv", package = "Eunomia"),
                                                     warnOnCaseMismatch = FALSE)
   for (i in 1:nrow(eunomiaCohortSettings)) {
-    cohortJsonFileName <- cohortJsonFiles[i]
     cohortName <- eunomiaCohortSettings$name[i]
     cohortSql <- SqlRender::readSql(sourceFile = system.file(file.path("sql/sql_server", paste0(cohortName, ".sql")), package = "Eunomia"))
     cohortDefinitionSet <- rbind(cohortDefinitionSet, data.frame(cohortId = i,

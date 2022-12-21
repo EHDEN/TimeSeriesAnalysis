@@ -17,91 +17,422 @@ editor_options:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, error = TRUE)
 library(TimeSeriesAnalysis)
 library(dplyr)
 ```
 
 # Overview
 
-This document aims to describe the various functions of the TimeSeriesAnalysis package and how it may be used for Risk Minimisation Measures (RMM) effectiveness.
+This document aims to showcase how to use the TimeSeriesAnalysis package for the sample data sets included in the package.
 
-## Background
+## Data set 1: Changes in use of HCQ in RA patients over time
 
-Once a health intervention such as a drug or medical product has been approved for use, regulatory authorities can introduce risk minimisation measures (RMM) to ensure and improve its safe use. Typical examples of RMM include changes in the conditions of marketing authorisation, use or label characteristics. Evaluating the impact of such regulatory measures is needed to measure immediate as well as long-term effects on drug uptake and use in the community. The same may be said for public health interventions in general. While randomised control trials (RCTs) remain the gold standard for RMM evaluation, they can be costly and selected. Established alternatives include observational studies using routinely-collected or cohort data. However, a recent study by the European Medicines Agency (EMA) found that registries that are commonly required for post-marking purposes frequently experience delays [citation needed]. Development of a standardised pipeline for analysis of existing data sources harmonised to the OMOP Common Data Model (OMOP CDM) has the potential to accelerating such studies and result in rapid, reproducible evidence.
+Background: RA guidelines recommend using Methotrexate as first line therapy ASAP from 2008,
+possibly ‘displacing’ hydroxychloroquine (HCQ).
 
-## Package Usage
+- Period: 2000 – 2018
 
-<TODO: DESCRIBE THE PIPELINE STEPS>
-
-- Design cohorts
-- Extract Time Series data for each cohort
-- Define model parameters
-- Build models for each cohort
-- Review models via Shiny
-
-## Designing Cohorts
-
-Resources:
-
-- Designing Cohorts: [https://ohdsi.github.io/TheBookOfOhdsi/Cohorts.html](https://ohdsi.github.io/TheBookOfOhdsi/Cohorts.html)
-- Atlas Course: [https://academy.ehden.eu/enrol/index.php?id=8](https://academy.ehden.eu/enrol/index.php?id=8)
-
-## Extracting Time Series Data
-
-<TODO: EXPLAIN CODE>
-
-```{r eval=FALSE}
+```{r}
+outputFolder <- "E:/Timeseries/HCQ_In_RA_Example"
+if (dir.exists(outputFolder)) {
+  unlink(outputFolder, recursive = TRUE)
+}
 data(drugData)
 
-data <- drugData
+# HCQ Use in RA Patients is cohortDefinitionId == 3
+tsData <- drugData %>%
+  filter(cohortDefinitionId == 3) %>%
+  arrange(cohortStartDate) %>%
+  select(cohortStartDate, subjectCount) %>%
+  rename(eventDate = cohortStartDate,
+         eventCount = subjectCount)
 
-tsData <- data %>%
+tsData
+```
+
+## Creating the model arguments
+
+The following sections will describe how to define the various model fitting arguments for several use cases.
+
+### Single Pre-specified change point – fixed (i.e. no estimated changepoint produced by model)
+
+In this example, we'll create the arguments used to fit a model that has no estimated change points and instead provides a single pre-specified change point for evaluation.
+
+```{r}
+segArgs1 <- createSegmentedArgs(modelType = "linear",
+                                psi = lubridate::as_date("2001-01-01"),
+                                control = segmented::seg.control(it.max = 0,
+                                                                 K = 1))
+
+```
+
+### Single prespecified changepoint – not fixed (i.e. an estimated changepoint produced by model which may or may no coincide with pre-specified change point)
+
+Now we'll create the arguments used to fit a model that has 1 estimated change points and a single pre-specified change point for evaluation.
+
+```{r}
+segArgs2 <- createSegmentedArgs(modelType = "linear",
+                                npsi = 1,
+                                fixed.psi = list(eventDate = lubridate::as_date("2001-01-01")))
+```
+
+
+### No prespecified changepoint – an estimated changepoint produced by model
+
+Now we'll create the arguments used to fit a model with a single estimated change point
+
+```{r}
+segArgs3 <- createSegmentedArgs(modelType = "linear")
+```
+
+### Single prespecified changepoint – and multiple estimated changepoints produced by model
+
+Now we'll create the arguments used to fit a model with a single pre-specified changepoint and 2 estimated changepoints.
+
+```{r}
+segArgs4 <- createSegmentedArgs(modelType = "linear",
+                                npsi = 2,
+                                fixed.psi = list(eventDate = lubridate::as_date("2001-01-01")))
+```
+
+### Bayesian Online Change point detection
+
+```{r}
+ocpArgs <- TimeSeriesAnalysis::createOcpArgs()
+```
+
+## Fitting the models
+
+Next we'll provide some code for using the arguments and data above to fit the models.
+
+```{r}
+# Create the full set of analyses
+tsAnalysis1 <- createTsAnalysis(analysisId = 1,
+                                description = "Single fixed, pre-specified change point",
+                                tsArgs = segArgs1)
+tsAnalysis2 <- createTsAnalysis(analysisId = 2,
+                               description = "1 pre-specified, 1 estimated changepoint",
+                               tsArgs = segArgs2)
+tsAnalysis3 <- createTsAnalysis(analysisId = 3,
+                                description = "Single estimated changepoint",
+                                tsArgs = segArgs3)
+tsAnalysis4 <- createTsAnalysis(analysisId = 4,
+                                description = "1 pre-specified, 2 estimated changepoints",
+                                tsArgs = segArgs4)
+tsAnalysis5 <- createTsAnalysis(analysisId = 5,
+                                description = "Bayesian Online Change point detection",
+                                tsArgs = ocpArgs)
+
+tsAnalysisList <- list(tsAnalysis1, tsAnalysis2, tsAnalysis3, tsAnalysis4, tsAnalysis5)
+
+# Run the analysis
+runTsAnalyses(tsData = tsData,
+              tsDataId = 1, # A unique identifier for the data set
+              outputFolder = outputFolder,
+              tsAnalysisList = tsAnalysisList)
+```
+
+## Inspecting the results
+
+Next we can use the package to plot the original time series and the model estimated change points.
+
+### Single Pre-specified change point – fixed (i.e. no estimated changepoint produced by model)
+
+```{r}
+m1 <- readRDS(file = file.path(outputFolder, "Analysis1/ts_d1.rds"))
+TimeSeriesAnalysis::plotSegmented(m1$tsData, m1$model, plotSubtitle = tsAnalysisList[[1]]$description)
+```
+
+### Single prespecified changepoint – not fixed (i.e. an estimated changepoint produced by model which may or may no coincide with pre-specified change point)
+
+```{r}
+m2 <- readRDS(file = file.path(outputFolder, "Analysis2/ts_d1.rds"))
+TimeSeriesAnalysis::plotSegmented(m2$tsData, m2$model, plotSubtitle = tsAnalysisList[[2]]$description)
+```
+
+### No prespecified changepoint – an estimated changepoint produced by model
+
+```{r}
+m3 <- readRDS(file = file.path(outputFolder, "Analysis3/ts_d1.rds"))
+TimeSeriesAnalysis::plotSegmented(m3$tsData, m3$model, plotSubtitle = tsAnalysisList[[3]]$description)
+```
+
+### Single prespecified changepoint – and multiple estimated changepoints produced by model
+
+```{r}
+m4 <- readRDS(file = file.path(outputFolder, "Analysis4/ts_d1.rds"))
+TimeSeriesAnalysis::plotSegmented(m4$tsData, m4$model, plotSubtitle = tsAnalysisList[[4]]$description)
+```
+
+### Bayesian Online Change point detection
+```{r}
+m5 <- readRDS(file = file.path(outputFolder, "Analysis5/ts_d1.rds"))
+TimeSeriesAnalysis::plotOcp(m5$tsData, m5$model, plotSubtitle = tsAnalysisList[[5]]$description)
+```
+
+## Data Set 2: HCQ for Covid-19 in 2020
+
+Background:
+- HCQ received emergency approval by FDA in March
+- Regulatory action followed in late April due to CV safety issues
+- Data: HCQ for Covid-19 treatment
+- Period: Jan – Oct 2020
+
+
+```{r}
+outputFolder <- "E:/Timeseries/HCQ_In_COVID"
+if (dir.exists(outputFolder)) {
+  unlink(outputFolder, recursive = TRUE)
+}
+
+# HCQ for Covid-19 in 2020 is cohortDefinitionId == 1
+tsData <- drugData %>%
   filter(cohortDefinitionId == 1) %>%
   arrange(cohortStartDate) %>%
   select(cohortStartDate, subjectCount) %>%
   rename(eventDate = cohortStartDate,
          eventCount = subjectCount)
 
-# Create the segmented model args
-segArgs <- createSegmentedArgs(modelType = "poisson")
+tsData
+```
+
+### Single Pre-specified change point – fixed (i.e. no estimated changepoint produced by model)
 
 
-# Doing this with another set of parameters
-segArgs2 <- createSegmentedArgs(modelType = "linear",
-                                psi = list(id = NA),
-                                npsi = 1,
-                                control = segmented::seg.control(fix.npsi=FALSE, 
-                                                                 n.boot=100, 
-                                                                 tol=1e-7, 
-                                                                 it.max = 100, 
-                                                                 K=1, 
-                                                                 display=TRUE))
-# Now use the ocp default settings
-ocpArgs <- TimeSeriesAnalysis::createOcpArgs()
-
-# Create the full set of analyses
-tsAnalysis1 <- createTsAnalysis(analysisId = 1,
-                                description = "Poisson model, single change point",
-                                tsArgs = segArgs)
-tsAnalysis2 <- createTsAnalysis(analysisId = 2,
-                                description = "Linear model, single change point, more involved control settings",
-                                tsArgs = segArgs2)
-tsAnalysis3 <- createTsAnalysis(analysisId = 3,
-                                description = "Bayesian Online Changepoint model",
-                                tsArgs = ocpArgs)
-
-tsAnalysisList <- list(tsAnalysis1, tsAnalysis2, tsAnalysis3)
-
-# Run the TS analyses
-runTsAnalyses(tsData = tsData,
-              tsDataId = 1,
-              outputFolder = outputFolder,
-              tsAnalysisList = tsAnalysisList)
+```{r}
+segArgs1 <- createSegmentedArgs(modelType = "linear",
+                                psi = lubridate::as_date("2020-03-01"),
+                                control = segmented::seg.control(it.max = 0,
+                                                                 K = 1))
 
 ```
 
-## Reviewing Results
+### Single prespecified changepoint – not fixed (i.e. an estimated changepoint produced by model which may or may no coincide with pre-specified change point)
 
-<TODO: Describe results review>
+```{r}
+segArgs2 <- createSegmentedArgs(modelType = "linear",
+                                npsi = 1,
+                                fixed.psi = list(eventDate = lubridate::as_date("2020-03-01")))
+```
+
+
+### No prespecified changepoint – an estimated changepoint produced by model
+
+Now we'll create the arguments used to fit a model with a single estimated change point
+
+```{r}
+segArgs3 <- createSegmentedArgs(modelType = "linear")
+```
+
+### Single prespecified changepoint – and multiple estimated changepoints produced by model
+
+Now we'll create the arguments used to fit a model with a single pre-specified changepoint and 2 estimated changepoints.
+
+```{r}
+segArgs4 <- createSegmentedArgs(modelType = "linear",
+                                npsi = 2,
+                                fixed.psi = list(eventDate = lubridate::as_date("2020-03-01")))
+```
+
+
+## Fitting the models
+
+Next we'll provide some code for using the arguments and data above to fit the models.
+
+```{r}
+# Create the full set of analyses
+tsAnalysis1 <- createTsAnalysis(analysisId = 1,
+                                description = "Single fixed, pre-specified change point",
+                                tsArgs = segArgs1)
+tsAnalysis2 <- createTsAnalysis(analysisId = 2,
+                               description = "1 pre-specified, 1 estimated changepoint",
+                               tsArgs = segArgs2)
+tsAnalysis3 <- createTsAnalysis(analysisId = 3,
+                                description = "Single estimated changepoint",
+                                tsArgs = segArgs3)
+tsAnalysis4 <- createTsAnalysis(analysisId = 4,
+                                description = "1 pre-specified, 2 estimated changepoints",
+                                tsArgs = segArgs4)
+tsAnalysis5 <- createTsAnalysis(analysisId = 5,
+                                description = "Bayesian Online Change point detection",
+                                tsArgs = ocpArgs)
+
+tsAnalysisList <- list(tsAnalysis1, tsAnalysis2, tsAnalysis3, tsAnalysis4, tsAnalysis5)
+
+# Run the analysis
+runTsAnalyses(tsData = tsData,
+              tsDataId = 2, # A unique identifier for the data set
+              outputFolder = outputFolder,
+              tsAnalysisList = tsAnalysisList)
+```
+
+
+### Inspect the results
+
+### Single Pre-specified change point – fixed (i.e. no estimated changepoint produced by model)
+
+```{r}
+m1 <- readRDS(file = file.path(outputFolder, "Analysis1/ts_d2.rds"))
+TimeSeriesAnalysis::plotSegmented(m1$tsData, m1$model, plotSubtitle = tsAnalysisList[[1]]$description)
+```
+
+### Single prespecified changepoint – not fixed (i.e. an estimated changepoint produced by model which may or may no coincide with pre-specified change point)
+
+```{r}
+m2 <- readRDS(file = file.path(outputFolder, "Analysis2/ts_d2.rds"))
+TimeSeriesAnalysis::plotSegmented(m2$tsData, m2$model, plotSubtitle = tsAnalysisList[[2]]$description)
+```
+
+### No prespecified changepoint – an estimated changepoint produced by model
+
+```{r}
+m3 <- readRDS(file = file.path(outputFolder, "Analysis3/ts_d2.rds"))
+TimeSeriesAnalysis::plotSegmented(m3$tsData, m3$model, plotSubtitle = tsAnalysisList[[3]]$description)
+```
+
+### Single prespecified changepoint – and multiple estimated changepoints produced by model
+
+```{r}
+m4 <- readRDS(file = file.path(outputFolder, "Analysis4/ts_d2.rds"))
+TimeSeriesAnalysis::plotSegmented(m4$tsData, m4$model, plotSubtitle = tsAnalysisList[[4]]$description)
+```
+
+### Bayesian Online Change point detection
+```{r}
+m5 <- readRDS(file = file.path(outputFolder, "Analysis5/ts_d2.rds"))
+TimeSeriesAnalysis::plotOcp(m5$tsData, m5$model, plotSubtitle = tsAnalysisList[[5]]$description)
+```
+
+
+## Data Set 3: Dexamethasone for Covid-19 in 2020
+
+Background:
+- RECOVERY RCT report 30% reduction in mortality in late June 2020 with dexamethasone (DXM)
+- Period: Jan – Oct 2020
+
+
+```{r}
+outputFolder <- "E:/Timeseries/DEX_In_COVID"
+if (dir.exists(outputFolder)) {
+  unlink(outputFolder, recursive = TRUE)
+}
+
+# DEX for Covid-19 in 2020 is cohortDefinitionId == 2
+tsData <- drugData %>%
+  filter(cohortDefinitionId == 2) %>%
+  arrange(cohortStartDate) %>%
+  select(cohortStartDate, subjectCount) %>%
+  rename(eventDate = cohortStartDate,
+         eventCount = subjectCount)
+
+tsData
+```
+
+### Single Pre-specified change point – fixed (i.e. no estimated changepoint produced by model)
+
+
+```{r}
+segArgs1 <- createSegmentedArgs(modelType = "linear",
+                                psi = lubridate::as_date("2020-06-01"),
+                                control = segmented::seg.control(it.max = 0,
+                                                                 K = 1))
+
+```
+
+### Single prespecified changepoint – not fixed (i.e. an estimated changepoint produced by model which may or may no coincide with pre-specified change point)
+
+```{r}
+segArgs2 <- createSegmentedArgs(modelType = "linear",
+                                npsi = 1,
+                                fixed.psi = list(eventDate = lubridate::as_date("2020-06-01")))
+```
+
+
+### No prespecified changepoint – an estimated changepoint produced by model
+
+Now we'll create the arguments used to fit a model with a single estimated change point
+
+```{r}
+segArgs3 <- createSegmentedArgs(modelType = "linear")
+```
+
+### Single prespecified changepoint – and multiple estimated changepoints produced by model
+
+Now we'll create the arguments used to fit a model with a single pre-specified changepoint and 2 estimated changepoints.
+
+```{r}
+segArgs4 <- createSegmentedArgs(modelType = "linear",
+                                npsi = 2,
+                                fixed.psi = list(eventDate = lubridate::as_date("2020-06-01")))
+```
+
+
+## Fitting the models
+
+Next we'll provide some code for using the arguments and data above to fit the models.
+
+```{r}
+# Create the full set of analyses
+tsAnalysis1 <- createTsAnalysis(analysisId = 1,
+                                description = "Single fixed, pre-specified change point",
+                                tsArgs = segArgs1)
+tsAnalysis2 <- createTsAnalysis(analysisId = 2,
+                               description = "1 pre-specified, 1 estimated changepoint",
+                               tsArgs = segArgs2)
+tsAnalysis3 <- createTsAnalysis(analysisId = 3,
+                                description = "Single estimated changepoint",
+                                tsArgs = segArgs3)
+tsAnalysis4 <- createTsAnalysis(analysisId = 4,
+                                description = "1 pre-specified, 2 estimated changepoints",
+                                tsArgs = segArgs4)
+tsAnalysis5 <- createTsAnalysis(analysisId = 5,
+                                description = "Bayesian Online Change point detection",
+                                tsArgs = ocpArgs)
+
+tsAnalysisList <- list(tsAnalysis1, tsAnalysis2, tsAnalysis3, tsAnalysis4, tsAnalysis5)
+
+# Run the analysis
+runTsAnalyses(tsData = tsData,
+              tsDataId = 3, # A unique identifier for the data set
+              outputFolder = outputFolder,
+              tsAnalysisList = tsAnalysisList)
+```
+
+
+### Inspect the results
+
+### Single Pre-specified change point – fixed (i.e. no estimated changepoint produced by model)
+
+```{r}
+m1 <- readRDS(file = file.path(outputFolder, "Analysis1/ts_d3.rds"))
+TimeSeriesAnalysis::plotSegmented(m1$tsData, m1$model, plotSubtitle = tsAnalysisList[[1]]$description)
+```
+
+### Single prespecified changepoint – not fixed (i.e. an estimated changepoint produced by model which may or may no coincide with pre-specified change point)
+
+```{r}
+m2 <- readRDS(file = file.path(outputFolder, "Analysis2/ts_d3.rds"))
+TimeSeriesAnalysis::plotSegmented(m2$tsData, m2$model, plotSubtitle = tsAnalysisList[[2]]$description)
+```
+
+### No prespecified changepoint – an estimated changepoint produced by model
+
+```{r}
+m3 <- readRDS(file = file.path(outputFolder, "Analysis3/ts_d3.rds"))
+TimeSeriesAnalysis::plotSegmented(m3$tsData, m3$model, plotSubtitle = tsAnalysisList[[3]]$description)
+```
+
+### Single prespecified changepoint – and multiple estimated changepoints produced by model
+
+```{r}
+m4 <- readRDS(file = file.path(outputFolder, "Analysis4/ts_d3.rds"))
+TimeSeriesAnalysis::plotSegmented(m4$tsData, m4$model, plotSubtitle = tsAnalysisList[[4]]$description)
+```
+
+### Bayesian Online Change point detection
+```{r}
+m5 <- readRDS(file = file.path(outputFolder, "Analysis5/ts_d3.rds"))
+TimeSeriesAnalysis::plotOcp(m5$tsData, m5$model, plotSubtitle = tsAnalysisList[[5]]$description)
+```
 

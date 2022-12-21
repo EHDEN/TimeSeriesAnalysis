@@ -3,7 +3,7 @@ library(dplyr)
 library(Eunomia)
 
 # Export folder
-outputFolder <- "E:/Timeseries/"
+outputFolder <- "E:/Timeseries/HCQ_Example"
 
 
 getEunomiaTimeSeriesData <- function() {
@@ -74,6 +74,17 @@ segArgs2 <- createSegmentedArgs(modelType = "linear",
                                                                  it.max = 100, 
                                                                  K=1, 
                                                                  display=TRUE))
+# SLR with 2 change points
+segArgs3 <- createSegmentedArgs(modelType = "linear",
+                                psi = list(id = NA),
+                                npsi = 2,
+                                control = segmented::seg.control(fix.npsi=FALSE, 
+                                                                 n.boot=100, 
+                                                                 tol=1e-7, 
+                                                                 it.max = 100, 
+                                                                 K=1, 
+                                                                 display=TRUE))
+
 # Now use the ocp default settings
 ocpArgs <- TimeSeriesAnalysis::createOcpArgs()
 
@@ -87,8 +98,11 @@ tsAnalysis2 <- createTsAnalysis(analysisId = 2,
 tsAnalysis3 <- createTsAnalysis(analysisId = 3,
                                 description = "Bayesian Online Changepoint model",
                                 tsArgs = ocpArgs)
+tsAnalysis4 <- createTsAnalysis(analysisId = 4,
+                                description = "Linear model, 2 change points",
+                                tsArgs = segArgs3)
 
-tsAnalysisList <- list(tsAnalysis1, tsAnalysis2, tsAnalysis3)
+tsAnalysisList <- list(tsAnalysis1, tsAnalysis3, tsAnalysis4, tsAnalysis2)
 
 # Run the TS analyses
 runTsAnalyses(tsData = tsData,
@@ -100,15 +114,18 @@ runTsAnalyses(tsData = tsData,
 ParallelLogger::saveSettingsToJson(tsAnalysisList, fileName = file.path(outputFolder, "specs.json"))
 
 # Inspect the models
-m <- readRDS(file = "E:/Timeseries/Analysis1/ts_d1.rds")
+m <- readRDS(file = file.path(outputFolder, "Analysis1/ts_d1.rds"))
 TimeSeriesAnalysis::plotSegmented(m$tsData, m$model)
 sara.plot(m$model, m$tsData)
 
-m2 <- readRDS(file = "E:/Timeseries/Analysis2/ts_d1.rds")
+m2 <- readRDS(file = file.path(outputFolder, "Analysis2/ts_d1.rds"))
 TimeSeriesAnalysis::plotSegmented(m2$tsData, m2$model)
 sara.plot(m2$model, m2$tsData)
 
-m3 <- readRDS(file = "E:/Timeseries/Analysis3/ts_d1.rds")
+m3 <- readRDS(file = file.path(outputFolder, "Analysis3/ts_d1.rds"))
 #debugonce(TimeSeriesAnalysis::plotOcp)
 TimeSeriesAnalysis::plotOcp(m3$tsData, m3$model)
+
+m4 <- readRDS(file = file.path(outputFolder, "Analysis4/ts_d1.rds"))
+TimeSeriesAnalysis::plotSegmented(m4$tsData, m4$model)
 

@@ -193,7 +193,11 @@ shinyServer(function(input, output, session) {
     } else {
       stop(paste0("An unknown time series model found: ", class(analysisList[[analysisId()]]$tsArgs), ". Stopping the execution."))
     }
+
     return(plot)
+    # plot(analysisOutput$model, conf.level=0.95, shade=TRUE, type = "l", xlab = "Time", ylab = "N Drugs", main = paste("Segmented Linear Regression, npsi = 1"))# plots regression lines of the two segments using the coeffs returned in o.seg
+    # points(analysisOutput$tsData$eventDate,analysisOutput$tsData$eventCount, xlab = "Event Date", ylab = "Event Count", cex= 1.5, pch=16)# add the actual time series, ,type = "l"
+    
   }, res = 100)
   
   # Database Info ------------------
