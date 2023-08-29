@@ -48,12 +48,12 @@ createSegmentedModel <- function(tsData,
   checkmate::assert_data_frame(x = tsData, min.rows = 1, add = errorMessages)
   checkmate::assert_class(x = segmentedArgs, classes = c("SegmentedArgs"), add = errorMessages)
   checkmate::assert_choice(x = segmentedArgs$modelType, choices = c("poisson", "linear"), add = errorMessages)
-  
+
 
   # Convert the eventDate to a double for training the model
   tsData <- tsData %>%
     mutate(eventDate = as.double(.data$eventDate))
-  
+
   if (tolower(segmentedArgs$modelType) == "poisson") {
     obj <- stats::glm(eventCount ~ eventDate, data = tsData, family = stats::poisson)
   } else {

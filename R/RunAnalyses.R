@@ -19,12 +19,12 @@ createTsAnalysis <- function(analysisId = 1,
   checkmate::assertInt(analysisId, add = errorMessages)
   checkmate::assertCharacter(description, len = 1, add = errorMessages)
   checkmate::assert_class(x = tsArgs, classes = c("SegmentedArgs", "OcpArgs"), add = errorMessages)
-  
+
   analysis <- list()
   for (name in names(formals(createTsAnalysis))) {
     analysis[[name]] <- get(name)
   }
-  
+
   class(analysis) <- "tsAnalysis"
   return(analysis)
 }

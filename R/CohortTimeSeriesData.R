@@ -95,7 +95,7 @@ executeCohortTimeSeriesDataQuery <- function(connection,
                                              cohortTimeSeriesArgs) {
   sql <- SqlRender::readSql(
     system.file(
-      "sql/sql_server/CohortTimeSeries.sql", 
+      "sql/sql_server/CohortTimeSeries.sql",
       package = "TimeSeriesAnalysis",
       mustWork = TRUE
     )

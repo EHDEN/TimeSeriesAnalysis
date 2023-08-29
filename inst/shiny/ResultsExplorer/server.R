@@ -5,35 +5,6 @@ library(htmltools)
 library(ggplot2)
 library(dplyr)
 
-stackedBarChart <- function(table, rows, cols, title, show.legend=F, legend.position="top") {
-  # Note: drugLevels is a global variable
-  table <- table %>%
-    arrange(
-      #factor(databaseDescription, levels = rev(databaseList$databaseDescription)),
-      factor(group, levels=rev(drugLevels))
-    ) %>%
-    mutate(
-      #databaseDescription=factor(databaseDescription, levels=rev(databaseList$databaseDescription)),
-      group=factor(group,levels=rev(drugLevels))
-    )
-
-  p <- ggplot(table, aes(fill=group, y=percentage, x=year)) + 
-    geom_bar(position="fill", stat="identity", show.legend = show.legend) +
-    drugLevelsColorBrew +
-    labs(x = "Year", y = "Percentage (%)", title = title) +
-    scale_y_continuous(labels=scales::percent) +
-    guides(fill=guide_legend(title="Treatment"))
-  
-  if (show.legend) {
-    p <- p + theme(legend.position = legend.position)
-  }
-
-  p <- p + facet_wrap(facets = vars(table$databaseDescription),
-                      nrow=rows,
-                      ncol=cols)
-  return(p)
-}
-
 truncateStringDef <- function(columns, maxChars) {
   list(
     targets = columns,
@@ -78,7 +49,7 @@ minCellRealDef <- function(columns, digits = 1) {
 }
 
 styleAbsColorBar <- function(maxValue, colorPositive, colorNegative, angle = 90) {
-  JS(sprintf("isNaN(parseFloat(value))? '' : 'linear-gradient(%fdeg, transparent ' + (%f - Math.abs(value))/%f * 100 + '%%, ' + (value > 0 ? '%s ' : '%s ') + (%f - Math.abs(value))/%f * 100 + '%%)'", 
+  JS(sprintf("isNaN(parseFloat(value))? '' : 'linear-gradient(%fdeg, transparent ' + (%f - Math.abs(value))/%f * 100 + '%%, ' + (value > 0 ? '%s ' : '%s ') + (%f - Math.abs(value))/%f * 100 + '%%)'",
              angle, maxValue, maxValue, colorPositive, colorNegative, maxValue, maxValue))
 }
 
@@ -157,6 +128,10 @@ shinyServer(function(input, output, session) {
     return(cohorts[cohorts$cohortName == input$targetCohort,]$cohortId[1])
   })
   
+  databaseResultFolder <- reactive({
+    return(database[database$databaseId == input$databases,]$folderName[1])
+  })
+  
   output$cohortCountsTable <- renderDataTable({
     databaseIds <- unique(cohortCount$databaseId)
     table <- cohortCount[,c("cohortId", "cohortName", "databaseId", "cohortSubjects", "cohortEntries")]
@@ -179,25 +154,29 @@ shinyServer(function(input, output, session) {
   output$tsPlot <- renderPlot({
     resultModelFileName <- getModelFileName(analysisId = analysisId(),
                                             dataSetId = dataSetId())
-    #print(resultModelFileName)
-    analysisOutput <- readRDS(file.path(dataFolder, resultModelFileName))
+    #print(file.path(databaseResultFolder(), resultModelFileName))
+    analysisOutput <- readRDS(file.path(databaseResultFolder(), resultModelFileName))
     
-    if ("SegmentedArgs" %in% class(analysisList[[analysisId()]]$tsArgs)) {
-      plot <- TimeSeriesAnalysis::plotSegmented(tsData = analysisOutput$tsData,
-                                                model = analysisOutput$model,
-                                                plotSubtitle = input$databases)
-    } else if ("OcpArgs" %in% class(analysisList[[analysisId()]]$tsArgs)) {
-      plot <- TimeSeriesAnalysis::plotOcp(tsData = analysisOutput$tsData,
-                                          model = analysisOutput$model,
-                                          plotSubtitle = input$databases)
+    if (is.null(analysisOutput$model)) {
+      plot <- TimeSeriesAnalysis::plotTimeSeries(tsData = analysisOutput$tsData,
+                                                 applyFormatting = TRUE,
+                                                 plotTitle = "Time series - no model fit",
+                                                 plotSubtitle = input$databases)
     } else {
-      stop(paste0("An unknown time series model found: ", class(analysisList[[analysisId()]]$tsArgs), ". Stopping the execution."))
+      if ("SegmentedArgs" %in% class(analysisList[[analysisId()]]$tsArgs)) {
+        plot <- TimeSeriesAnalysis::plotSegmented(tsData = analysisOutput$tsData,
+                                                  model = analysisOutput$model,
+                                                  plotSubtitle = input$databases)
+      } else if ("OcpArgs" %in% class(analysisList[[analysisId()]]$tsArgs)) {
+        plot <- TimeSeriesAnalysis::plotOcp(tsData = analysisOutput$tsData,
+                                            model = analysisOutput$model,
+                                            plotSubtitle = input$databases)
+      } else {
+        stop(paste0("An unknown time series model found: ", class(analysisList[[analysisId()]]$tsArgs), ". Stopping the execution."))
+      }
     }
 
     return(plot)
-    # plot(analysisOutput$model, conf.level=0.95, shade=TRUE, type = "l", xlab = "Time", ylab = "N Drugs", main = paste("Segmented Linear Regression, npsi = 1"))# plots regression lines of the two segments using the coeffs returned in o.seg
-    # points(analysisOutput$tsData$eventDate,analysisOutput$tsData$eventCount, xlab = "Event Date", ylab = "Event Count", cex= 1.5, pch=16)# add the actual time series, ,type = "l"
-    
   }, res = 100)
   
   # Database Info ------------------
@@ -207,19 +186,14 @@ shinyServer(function(input, output, session) {
   
   output$databaseInformationTable <- renderDataTable({
 
-    table <- database #database[, c("databaseId", "databaseName", "description", "termsOfUse")]
+    table <- database
     options = list(pageLength = 25,
                    searching = TRUE,
                    lengthChange = FALSE,
                    ordering = TRUE,
-                   paging = FALSE#,
-                   #columnDefs = list(list(width = '10%', targets = 0),
-                    #                 list(width = '20%', targets = 1),
-                    #                 list(width = '35%', targets = 2))
-    )
+                   paging = FALSE)
     table <- datatable(table,
                        options = options,
-                       #colnames = c("ID", "Name", "Description", "Terms of Use"),
                        rownames = FALSE,
                        class = "stripe compact")
     return(table)

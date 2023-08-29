@@ -45,8 +45,10 @@ tsData <- drugData %>%
   filter(cohortDefinitionId == 3) %>%
   arrange(cohortStartDate) %>%
   select(cohortStartDate, subjectCount) %>%
-  rename(eventDate = cohortStartDate,
-         eventCount = subjectCount)
+  rename(
+    eventDate = cohortStartDate,
+    eventCount = subjectCount
+  )
 
 tsData
 ```
@@ -60,11 +62,14 @@ The following sections will describe how to define the various model fitting arg
 In this example, we'll create the arguments used to fit a model that has no estimated change points and instead provides a single pre-specified change point for evaluation.
 
 ```{r}
-segArgs1 <- createSegmentedArgs(modelType = "linear",
-                                psi = lubridate::as_date("2001-01-01"),
-                                control = segmented::seg.control(it.max = 0,
-                                                                 K = 1))
-
+segArgs1 <- createSegmentedArgs(
+  modelType = "linear",
+  psi = lubridate::as_date("2001-01-01"),
+  control = segmented::seg.control(
+    it.max = 0,
+    K = 1
+  )
+)
 ```
 
 ### Single prespecified changepoint – not fixed (i.e. an estimated changepoint produced by model which may or may no coincide with pre-specified change point)
@@ -72,9 +77,11 @@ segArgs1 <- createSegmentedArgs(modelType = "linear",
 Now we'll create the arguments used to fit a model that has 1 estimated change points and a single pre-specified change point for evaluation.
 
 ```{r}
-segArgs2 <- createSegmentedArgs(modelType = "linear",
-                                npsi = 1,
-                                fixed.psi = list(eventDate = lubridate::as_date("2001-01-01")))
+segArgs2 <- createSegmentedArgs(
+  modelType = "linear",
+  npsi = 1,
+  fixed.psi = list(eventDate = lubridate::as_date("2001-01-01"))
+)
 ```
 
 
@@ -91,9 +98,11 @@ segArgs3 <- createSegmentedArgs(modelType = "linear")
 Now we'll create the arguments used to fit a model with a single pre-specified changepoint and 2 estimated changepoints.
 
 ```{r}
-segArgs4 <- createSegmentedArgs(modelType = "linear",
-                                npsi = 2,
-                                fixed.psi = list(eventDate = lubridate::as_date("2001-01-01")))
+segArgs4 <- createSegmentedArgs(
+  modelType = "linear",
+  npsi = 2,
+  fixed.psi = list(eventDate = lubridate::as_date("2001-01-01"))
+)
 ```
 
 ### Bayesian Online Change point detection
@@ -108,29 +117,41 @@ Next we'll provide some code for using the arguments and data above to fit the m
 
 ```{r}
 # Create the full set of analyses
-tsAnalysis1 <- createTsAnalysis(analysisId = 1,
-                                description = "Single fixed, pre-specified change point",
-                                tsArgs = segArgs1)
-tsAnalysis2 <- createTsAnalysis(analysisId = 2,
-                               description = "1 pre-specified, 1 estimated changepoint",
-                               tsArgs = segArgs2)
-tsAnalysis3 <- createTsAnalysis(analysisId = 3,
-                                description = "Single estimated changepoint",
-                                tsArgs = segArgs3)
-tsAnalysis4 <- createTsAnalysis(analysisId = 4,
-                                description = "1 pre-specified, 2 estimated changepoints",
-                                tsArgs = segArgs4)
-tsAnalysis5 <- createTsAnalysis(analysisId = 5,
-                                description = "Bayesian Online Change point detection",
-                                tsArgs = ocpArgs)
+tsAnalysis1 <- createTsAnalysis(
+  analysisId = 1,
+  description = "Single fixed, pre-specified change point",
+  tsArgs = segArgs1
+)
+tsAnalysis2 <- createTsAnalysis(
+  analysisId = 2,
+  description = "1 pre-specified, 1 estimated changepoint",
+  tsArgs = segArgs2
+)
+tsAnalysis3 <- createTsAnalysis(
+  analysisId = 3,
+  description = "Single estimated changepoint",
+  tsArgs = segArgs3
+)
+tsAnalysis4 <- createTsAnalysis(
+  analysisId = 4,
+  description = "1 pre-specified, 2 estimated changepoints",
+  tsArgs = segArgs4
+)
+tsAnalysis5 <- createTsAnalysis(
+  analysisId = 5,
+  description = "Bayesian Online Change point detection",
+  tsArgs = ocpArgs
+)
 
 tsAnalysisList <- list(tsAnalysis1, tsAnalysis2, tsAnalysis3, tsAnalysis4, tsAnalysis5)
 
 # Run the analysis
-runTsAnalyses(tsData = tsData,
-              tsDataId = 1, # A unique identifier for the data set
-              outputFolder = outputFolder,
-              tsAnalysisList = tsAnalysisList)
+runTsAnalyses(
+  tsData = tsData,
+  tsDataId = 1, # A unique identifier for the data set
+  outputFolder = outputFolder,
+  tsAnalysisList = tsAnalysisList
+)
 ```
 
 ## Inspecting the results
@@ -191,8 +212,10 @@ tsData <- drugData %>%
   filter(cohortDefinitionId == 1) %>%
   arrange(cohortStartDate) %>%
   select(cohortStartDate, subjectCount) %>%
-  rename(eventDate = cohortStartDate,
-         eventCount = subjectCount)
+  rename(
+    eventDate = cohortStartDate,
+    eventCount = subjectCount
+  )
 
 tsData
 ```
@@ -201,19 +224,24 @@ tsData
 
 
 ```{r}
-segArgs1 <- createSegmentedArgs(modelType = "linear",
-                                psi = lubridate::as_date("2020-03-01"),
-                                control = segmented::seg.control(it.max = 0,
-                                                                 K = 1))
-
+segArgs1 <- createSegmentedArgs(
+  modelType = "linear",
+  psi = lubridate::as_date("2020-03-01"),
+  control = segmented::seg.control(
+    it.max = 0,
+    K = 1
+  )
+)
 ```
 
 ### Single prespecified changepoint – not fixed (i.e. an estimated changepoint produced by model which may or may no coincide with pre-specified change point)
 
 ```{r}
-segArgs2 <- createSegmentedArgs(modelType = "linear",
-                                npsi = 1,
-                                fixed.psi = list(eventDate = lubridate::as_date("2020-03-01")))
+segArgs2 <- createSegmentedArgs(
+  modelType = "linear",
+  npsi = 1,
+  fixed.psi = list(eventDate = lubridate::as_date("2020-03-01"))
+)
 ```
 
 
@@ -230,9 +258,11 @@ segArgs3 <- createSegmentedArgs(modelType = "linear")
 Now we'll create the arguments used to fit a model with a single pre-specified changepoint and 2 estimated changepoints.
 
 ```{r}
-segArgs4 <- createSegmentedArgs(modelType = "linear",
-                                npsi = 2,
-                                fixed.psi = list(eventDate = lubridate::as_date("2020-03-01")))
+segArgs4 <- createSegmentedArgs(
+  modelType = "linear",
+  npsi = 2,
+  fixed.psi = list(eventDate = lubridate::as_date("2020-03-01"))
+)
 ```
 
 
@@ -242,29 +272,41 @@ Next we'll provide some code for using the arguments and data above to fit the m
 
 ```{r}
 # Create the full set of analyses
-tsAnalysis1 <- createTsAnalysis(analysisId = 1,
-                                description = "Single fixed, pre-specified change point",
-                                tsArgs = segArgs1)
-tsAnalysis2 <- createTsAnalysis(analysisId = 2,
-                               description = "1 pre-specified, 1 estimated changepoint",
-                               tsArgs = segArgs2)
-tsAnalysis3 <- createTsAnalysis(analysisId = 3,
-                                description = "Single estimated changepoint",
-                                tsArgs = segArgs3)
-tsAnalysis4 <- createTsAnalysis(analysisId = 4,
-                                description = "1 pre-specified, 2 estimated changepoints",
-                                tsArgs = segArgs4)
-tsAnalysis5 <- createTsAnalysis(analysisId = 5,
-                                description = "Bayesian Online Change point detection",
-                                tsArgs = ocpArgs)
+tsAnalysis1 <- createTsAnalysis(
+  analysisId = 1,
+  description = "Single fixed, pre-specified change point",
+  tsArgs = segArgs1
+)
+tsAnalysis2 <- createTsAnalysis(
+  analysisId = 2,
+  description = "1 pre-specified, 1 estimated changepoint",
+  tsArgs = segArgs2
+)
+tsAnalysis3 <- createTsAnalysis(
+  analysisId = 3,
+  description = "Single estimated changepoint",
+  tsArgs = segArgs3
+)
+tsAnalysis4 <- createTsAnalysis(
+  analysisId = 4,
+  description = "1 pre-specified, 2 estimated changepoints",
+  tsArgs = segArgs4
+)
+tsAnalysis5 <- createTsAnalysis(
+  analysisId = 5,
+  description = "Bayesian Online Change point detection",
+  tsArgs = ocpArgs
+)
 
 tsAnalysisList <- list(tsAnalysis1, tsAnalysis2, tsAnalysis3, tsAnalysis4, tsAnalysis5)
 
 # Run the analysis
-runTsAnalyses(tsData = tsData,
-              tsDataId = 2, # A unique identifier for the data set
-              outputFolder = outputFolder,
-              tsAnalysisList = tsAnalysisList)
+runTsAnalyses(
+  tsData = tsData,
+  tsDataId = 2, # A unique identifier for the data set
+  outputFolder = outputFolder,
+  tsAnalysisList = tsAnalysisList
+)
 ```
 
 
@@ -323,8 +365,10 @@ tsData <- drugData %>%
   filter(cohortDefinitionId == 2) %>%
   arrange(cohortStartDate) %>%
   select(cohortStartDate, subjectCount) %>%
-  rename(eventDate = cohortStartDate,
-         eventCount = subjectCount)
+  rename(
+    eventDate = cohortStartDate,
+    eventCount = subjectCount
+  )
 
 tsData
 ```
@@ -333,19 +377,24 @@ tsData
 
 
 ```{r}
-segArgs1 <- createSegmentedArgs(modelType = "linear",
-                                psi = lubridate::as_date("2020-06-01"),
-                                control = segmented::seg.control(it.max = 0,
-                                                                 K = 1))
-
+segArgs1 <- createSegmentedArgs(
+  modelType = "linear",
+  psi = lubridate::as_date("2020-06-01"),
+  control = segmented::seg.control(
+    it.max = 0,
+    K = 1
+  )
+)
 ```
 
 ### Single prespecified changepoint – not fixed (i.e. an estimated changepoint produced by model which may or may no coincide with pre-specified change point)
 
 ```{r}
-segArgs2 <- createSegmentedArgs(modelType = "linear",
-                                npsi = 1,
-                                fixed.psi = list(eventDate = lubridate::as_date("2020-06-01")))
+segArgs2 <- createSegmentedArgs(
+  modelType = "linear",
+  npsi = 1,
+  fixed.psi = list(eventDate = lubridate::as_date("2020-06-01"))
+)
 ```
 
 
@@ -362,9 +411,11 @@ segArgs3 <- createSegmentedArgs(modelType = "linear")
 Now we'll create the arguments used to fit a model with a single pre-specified changepoint and 2 estimated changepoints.
 
 ```{r}
-segArgs4 <- createSegmentedArgs(modelType = "linear",
-                                npsi = 2,
-                                fixed.psi = list(eventDate = lubridate::as_date("2020-06-01")))
+segArgs4 <- createSegmentedArgs(
+  modelType = "linear",
+  npsi = 2,
+  fixed.psi = list(eventDate = lubridate::as_date("2020-06-01"))
+)
 ```
 
 
@@ -374,29 +425,41 @@ Next we'll provide some code for using the arguments and data above to fit the m
 
 ```{r}
 # Create the full set of analyses
-tsAnalysis1 <- createTsAnalysis(analysisId = 1,
-                                description = "Single fixed, pre-specified change point",
-                                tsArgs = segArgs1)
-tsAnalysis2 <- createTsAnalysis(analysisId = 2,
-                               description = "1 pre-specified, 1 estimated changepoint",
-                               tsArgs = segArgs2)
-tsAnalysis3 <- createTsAnalysis(analysisId = 3,
-                                description = "Single estimated changepoint",
-                                tsArgs = segArgs3)
-tsAnalysis4 <- createTsAnalysis(analysisId = 4,
-                                description = "1 pre-specified, 2 estimated changepoints",
-                                tsArgs = segArgs4)
-tsAnalysis5 <- createTsAnalysis(analysisId = 5,
-                                description = "Bayesian Online Change point detection",
-                                tsArgs = ocpArgs)
+tsAnalysis1 <- createTsAnalysis(
+  analysisId = 1,
+  description = "Single fixed, pre-specified change point",
+  tsArgs = segArgs1
+)
+tsAnalysis2 <- createTsAnalysis(
+  analysisId = 2,
+  description = "1 pre-specified, 1 estimated changepoint",
+  tsArgs = segArgs2
+)
+tsAnalysis3 <- createTsAnalysis(
+  analysisId = 3,
+  description = "Single estimated changepoint",
+  tsArgs = segArgs3
+)
+tsAnalysis4 <- createTsAnalysis(
+  analysisId = 4,
+  description = "1 pre-specified, 2 estimated changepoints",
+  tsArgs = segArgs4
+)
+tsAnalysis5 <- createTsAnalysis(
+  analysisId = 5,
+  description = "Bayesian Online Change point detection",
+  tsArgs = ocpArgs
+)
 
 tsAnalysisList <- list(tsAnalysis1, tsAnalysis2, tsAnalysis3, tsAnalysis4, tsAnalysis5)
 
 # Run the analysis
-runTsAnalyses(tsData = tsData,
-              tsDataId = 3, # A unique identifier for the data set
-              outputFolder = outputFolder,
-              tsAnalysisList = tsAnalysisList)
+runTsAnalyses(
+  tsData = tsData,
+  tsDataId = 3, # A unique identifier for the data set
+  outputFolder = outputFolder,
+  tsAnalysisList = tsAnalysisList
+)
 ```
 
 

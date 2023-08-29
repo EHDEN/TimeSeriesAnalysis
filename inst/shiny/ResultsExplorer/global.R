@@ -9,80 +9,83 @@ is_installed <- function(pkg, version = 0) {
   !is.na(installed_version) && installed_version >= version
 }
 
-readResultsFile <- function(fileName) {
-  contents <- CohortGenerator::readCsv(file = fileName)
-  return(contents)
+dataFolder <- shinySettings$dataFolder
+
+# Verify that the results folder provided is of the right structure
+databaseFolders <- list.dirs(path = dataFolder, recursive = FALSE)
+
+if (length(databaseFolders) == 0) {
+  stop(paste0("The data folder '", dataFolder, "' must contain subfolders for each database's results."))
+}
+
+readResultsFiles <- function(databaseFolders, fileName, operation = "append", includeFolderName = FALSE) {
+  results <- NULL
+  for (i in 1:length(databaseFolders)) {
+    contents <- CohortGenerator::readCsv(
+      file <- file.path(databaseFolders[i], fileName)
+    )
+    if (includeFolderName) {
+      contents$folderName <- databaseFolders[i]
+    }
+    if (i == 1) {
+      results <- contents
+    } else {
+      results <- rbind(results, contents)
+      if (operation == "unique") {
+        results <- unique(results)
+      }
+    }
+  }
+  return(results)
+}
+
+readAnalysisListFiles <- function(databaseFolders) {
+  analyses <- data.frame()
+  for (i in 1:length(databaseFolders)) {
+    analysisList <- readRDS(
+      file = file.path(databaseFolders[i], "tsAnalysisList.rds")
+    )
+    for (j in 1:length(analysisList)) {
+      r <- data.frame(analysisId = analysisList[[j]]$analysisId,
+                      description = analysisList[[j]]$description)
+      if (i == 1) {
+        analyses <- r    
+      } else {
+        analyses <- rbind(analyses, r)  
+      }
+    }
+  }
+  analyses <- unique(analyses)
+  return(
+    list(
+      analysisList = analysisList, 
+      analyses = analyses
+    )
+  )
 }
 
 # Setup the app & read results
-dataStorage <- shinySettings$storage
-dataFolder <- shinySettings$dataFolder
-dataFile <- shinySettings$dataFile
-cohorts <- readResultsFile(fileName = file.path(shinySettings$dataFolder, "cohort.csv"))
-database <- readResultsFile(fileName = file.path(shinySettings$dataFolder, "database.csv"))
-cohortCount <- readResultsFile(fileName = file.path(shinySettings$dataFolder, "cohort_count.csv"))
+cohorts <- readResultsFiles(
+  databaseFolders = databaseFolders,
+  fileName = "cohort.csv",
+  operation = "unique"
+)
+database <- readResultsFiles(
+  databaseFolders = databaseFolders,
+  fileName = "database.csv",
+  includeFolderName = TRUE
+)
+cohortCount <- readResultsFiles(
+  databaseFolders = databaseFolders,
+  fileName = "cohort_count.csv"
+)
+cohortTimeSeriesData <- readResultsFiles(
+  databaseFolders = databaseFolders,
+  fileName = "cohort_time_series_data.csv"
+)
+
+analysisInfo <- readAnalysisListFiles(databaseFolders)
+analysisList <- analysisInfo$analysisList
+analyses <- analysisInfo$analyses
+
 cohortCount <- merge(cohortCount, cohorts)
-analysisList <- readRDS(file = file.path(shinySettings$dataFolder, "tsAnalysisList.rds"))
-analyses <- data.frame()
-for (i in 1:length(analysisList)) {
-  r <- data.frame(analysisId = analysisList[[i]]$analysisId,
-                  description = analysisList[[i]]$description)
-  if (i == 1) {
-    analyses <- r    
-  } else {
-    analyses <- rbind(analyses, r)  
-  }
-}
-
-
-# 
-# if (!exists("shinySettings")) {
-#   if (file.exists("data")) {
-#     shinySettings <- list(storage = "filesystem", dataFolder = "data", dataFile="PreMerged.RData")
-#   } else {
-#     stop("Results data not found")
-#   }
-# }
-# dataStorage <- shinySettings$storage
-# dataFolder <- shinySettings$dataFolder
-# dataFile <- shinySettings$dataFile
-# 
-# #Load the data
-# load(file.path(dataFolder, dataFile))
-# 
-# readSettingsFile <- function(fileName) {
-#   contents <- readr::read_csv(file.path("settings", fileName), col_types = readr::cols())
-#   return(contents)
-# }
-# 
-# #Load the settings
-# cohorts <- readSettingsFile("CohortsToCreate.csv")
-# eventTimeWindowsFromFile <- readSettingsFile("eventTimeWindows.csv")
-# targetEventXref <- readSettingsFile("targetEventXref.csv")
-# modelTypes <- c("Linear", "Poisson")
-# 
-# # Format the results
-# cohortCount <- merge(cohortCount, cohorts)
-# 
-# targetEventXref <- merge(targetEventXref, cohorts[,c("cohortId", "name")], by.x = "targetCohortId", "cohortId")
-# names(targetEventXref) <- c("targetCohortId", "eventCohortId", "targetCohortName")
-# targetEventXref <- merge(targetEventXref, cohorts[,c("cohortId", "name")], by.x = "eventCohortId", "cohortId")
-# names(targetEventXref) <- c("eventCohortId", "targetCohortId","targetCohortName", "eventCohortName")
-# 
-# eventTimeWindowsFromFile$timeDisplayName <- paste0(eventTimeWindowsFromFile$windowStart, "d - ", eventTimeWindowsFromFile$windowEnd, "d")
-# eventTimeWindowsSubset <- unique(eventTimeWindowsFromFile[,c("windowId", "timeDisplayName")])
-# eventTimeWindows <- eventTimeWindowsSubset$windowId
-# names(eventTimeWindows) <- eventTimeWindowsSubset$timeDisplayName
-# 
-# targetCohortsSubset <- unique(targetEventXref[,c("targetCohortId", "targetCohortName")])
-# targetCohorts <- targetCohortsSubset$targetCohortId
-# names(targetCohorts) <- targetCohortsSubset$targetCohortName
-# 
-# eventCohortsSubset <- unique(targetEventXref[,c("eventCohortId", "eventCohortName")])
-# eventCohorts <- eventCohortsSubset$eventCohortId
-# names(eventCohorts) <- eventCohortsSubset$eventCohortName
-
-
-
-
-
