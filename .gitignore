@@ -42,3 +42,5 @@ vignettes/*.pdf
 # Results data
 inst/shiny/ResultsExplorer/data
 /extras/PackageSetup.R
+/extras/*.csv
+/extras/CreateLocalData.R
